@@ -681,6 +681,7 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal waveformFIFO_DataCount   : std_logic_vector(11 downto 0);
   signal selectedADCIndex         : integer range 0 to NADCChannels-1 := 0;
 
+  signal triggeredWaveformFIFO_Reset       : std_logic := '0';
   signal triggeredWaveformFIFO_WriteData   : std_logic_vector(9 downto 0);
   signal triggeredWaveformFIFO_WriteEnable : std_logic;
   signal triggeredWaveformFIFO_ReadEnable  : std_logic;
@@ -836,7 +837,7 @@ begin
   instanceOfTriggeredWaveformFIFO2 : entity work.WaveformFIFO
     port map(
       clk        => Clock100MHz,
-      rst        => Reset,
+      rst        => triggeredWaveformFIFO_Reset,
       din        => triggeredWaveformFIFO_WriteData,
       wr_en      => triggeredWaveformFIFO_WriteEnable,
       rd_en      => triggeredWaveformFIFO_ReadEnable,
@@ -907,6 +908,7 @@ begin
           waveformCount                     <= 0;
           triggeredWaveformFIFO_ReadEnable  <= '0';
           triggeredWaveformFIFO_WriteEnable <= '0';
+          triggeredWaveformFIFO_Reset       <= '0';
 
           --receive
           if(ft232Received = '1')then
@@ -978,7 +980,8 @@ begin
             uartState          <= UART_STATE_SEND;
             uartStateAfterSend <= 201;
           elsif(ft232RxDataLatched = x"63")then  -- 'c'
-            uartState <= 0;
+            uartState                   <= 0;
+            triggeredWaveformFIFO_Reset <= '1';
           elsif(ft232RxDataLatched = x"74")then  -- 't' read triggered waveform
             uartState <= 181;           -- send triggered waveform
           else
@@ -1007,7 +1010,8 @@ begin
         when 181 =>                     -- send triggered waveform
           if(triggeredWaveformFIFO_Empty = '1')then
             --waveform sending completed
-            uartState <= 0;             -- go back to idle
+            uartState                 <= UART_STATE_SEND_NEWLINE;
+            uartStateAfterSendNewLine <= 0;  -- go back to idle after new line
           else
             triggeredWaveformFIFO_ReadEnable <= '1';
             uartState                        <= 182;
@@ -1062,7 +1066,7 @@ begin
           ft232TxData               <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(2 downto 0)), 8);
           uartState                 <= UART_STATE_SEND;
           uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
-          uartStateAfterSendNewLine <= 0;  -- idle
+          uartStateAfterSendNewLine <= 0;    -- idle
 
 
           -------------------
@@ -1198,7 +1202,8 @@ begin
         when 151 =>
           if(waveformFIFO_Empty = '1')then
             --waveform recording and sending completed
-            uartState <= 0;             -- go back to idle
+            uartState                 <= UART_STATE_SEND_NEWLINE;
+            uartStateAfterSendNewLine <= 0;  -- go back to idle after new line
           else
             waveformFIFO_ReadEnable <= '1';
             uartState               <= 152;
@@ -1223,7 +1228,7 @@ begin
           uartState          <= UART_STATE_SEND;
           uartStateAfterSend <= 164;
         when 164 =>
-          ft232TxData        <= x"20";  -- space
+          ft232TxData        <= x"20";       -- space
           uartState          <= UART_STATE_SEND;
           uartStateAfterSend <= 151;
 
