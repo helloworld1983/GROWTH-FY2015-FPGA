@@ -179,8 +179,8 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   ---------------------------------------------
   --Clock
   ---------------------------------------------
-  signal   Clock100MHz     : std_logic;
-  signal   Clock200MHz     : std_logic;
+  signal   Clock100MHz : std_logic;
+  signal   Clock200MHz : std_logic;
   constant Count1sec   : integer                      := 1e8;
   signal   counter1sec : integer range 0 to Count1sec := 0;
 
@@ -212,9 +212,9 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   ---------------------------------------------  
   constant NADCChannels : integer := 4;
 
-  signal ADCClock     : std_logic;
-  signal ADCClock_previous     : std_logic;
-  signal ADCData      : Vector10Bits(NADCChannels-1 downto 0);
+  signal ADCClock          : std_logic;
+  signal ADCClock_previous : std_logic;
+  signal ADCData           : Vector10Bits(NADCChannels-1 downto 0);
 
   ---------------------------------------------
   -- Channel Manager
@@ -339,7 +339,7 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
       received  : out std_logic;        -- '1' when new DataOut is valid
       txReady   : out std_logic         -- '1' when Tx is not busy
       );
-  end component;  
+  end component;
 
   ---------------------------------------------
   -- SpaceWire
@@ -472,9 +472,9 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
       Clock                       : in  std_logic;
       GlobalReset                 : in  std_logic
       );
-  end component;  constant iBusNumberofNodes   : integer := 7;
-  signal   BusIF2BusController : ibus_signals_busif2buscontroller_vector(iBusNumberofNodes-1 downto 0);
-  signal   BusController2BusIF : ibus_signals_buscontroller2busif_vector(iBusNumberofNodes-1 downto 0);
+  end component; constant iBusNumberofNodes : integer := 7;
+  signal BusIF2BusController                : ibus_signals_busif2buscontroller_vector(iBusNumberofNodes-1 downto 0);
+  signal BusController2BusIF                : ibus_signals_buscontroller2busif_vector(iBusNumberofNodes-1 downto 0);
 
   ---------------------------------------------
   -- SocketVHDL-RMAP
@@ -535,12 +535,12 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
       statisticalInformation       : out bit32X8Array
       );
   end component;
-    constant RMAPTargetLogicalAddress    : std_logic_vector(7 downto 0) := x"FE";
-  constant RMAPTargetKey               : std_logic_vector(7 downto 0) := x"00";
-  constant RMAPTargetCRCRevision       : std_logic                    := '1';  -- RMAP Draft F version
+  constant RMAPTargetLogicalAddress : std_logic_vector(7 downto 0) := x"FE";
+  constant RMAPTargetKey            : std_logic_vector(7 downto 0) := x"00";
+  constant RMAPTargetCRCRevision    : std_logic                    := '1';  -- RMAP Draft F version
 
 
-    constant tcpRMAPBusWidth                    : integer                                           := 16;
+  constant tcpRMAPBusWidth                    : integer                                           := 16;
   signal   tcpRMAPBusMasterCycleOut           : std_logic                                         := '0';
   signal   tcpRMAPBusMasterStrobeOut          : std_logic                                         := '0';
   signal   tcpRMAPBusMasterAddressOut         : std_logic_vector (31 downto 0)                    := (others => '0');
@@ -579,115 +579,115 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
 ---------------------------------------------
 -- ADC
 ---------------------------------------------
-  signal ADC0_D : std_logic_vector(9 downto 0) := (others => '0');
-  signal ADC1_D : std_logic_vector(9 downto 0) := (others => '0');
-  signal ADC2_D : std_logic_vector(9 downto 0) := (others => '0');
-  signal ADC3_D : std_logic_vector(9 downto 0) := (others => '0');
-  signal ADC0_CLK : std_logic := '0';
-  signal ADC1_CLK : std_logic := '0';
-  signal ADC2_CLK : std_logic := '0';
-  signal ADC3_CLK : std_logic := '0';
+  signal ADC0_D   : std_logic_vector(9 downto 0) := (others => '0');
+  signal ADC1_D   : std_logic_vector(9 downto 0) := (others => '0');
+  signal ADC2_D   : std_logic_vector(9 downto 0) := (others => '0');
+  signal ADC3_D   : std_logic_vector(9 downto 0) := (others => '0');
+  signal ADC0_CLK : std_logic                    := '0';
+  signal ADC1_CLK : std_logic                    := '0';
+  signal ADC2_CLK : std_logic                    := '0';
+  signal ADC3_CLK : std_logic                    := '0';
 
-  signal ADC_PDWN : std_logic := '0';
-  signal ADC_MODE : std_logic := '0'; -- 0 = Offset Binary Data Format, Duty Cycle Stabilizer Disabled
+  signal ADC_PDWN : std_logic                    := '0';
+  signal ADC_MODE : std_logic                    := '0';  -- 0 = Offset Binary Data Format, Duty Cycle Stabilizer Disabled
   signal TRIG_OUT : std_logic_vector(3 downto 0) := (others => '0');
-  
+
   -- ADC's SENSE pin is connected to GND.
   -- This results in "Vref=1.0" and span = 2 * Vref = 2.0V.
 
 ---------------------------------------------
 -- UART (Raspberry Pi / FT232)
 ---------------------------------------------
-signal RPI_RX_FPGA_TX : std_logic := '0';
-signal RPI_TX_FPGA_RX : std_logic := '0';
-signal FT232_RX_FPGA_TX : std_logic := '0';
-signal FT232_TX_FPGA_RX : std_logic := '0';
-signal FT232_nCTS_FPGA_nRTS : std_logic := '0'; -- FPGA output, FT232 input
-signal FT232_nRTS_FPGA_nCTS : std_logic := '0'; -- FPGA input, FT232 output
-signal GPS_RX_FPGA_TX : std_logic := '0';
-signal GPS_TX_FPGA_RX : std_logic := '0';
+  signal RPI_RX_FPGA_TX       : std_logic := '0';
+  signal RPI_TX_FPGA_RX       : std_logic := '0';
+  signal FT232_RX_FPGA_TX     : std_logic := '0';
+  signal FT232_TX_FPGA_RX     : std_logic := '0';
+  signal FT232_nCTS_FPGA_nRTS : std_logic := '0';  -- FPGA output, FT232 input
+  signal FT232_nRTS_FPGA_nCTS : std_logic := '0';  -- FPGA input, FT232 output
+  signal GPS_RX_FPGA_TX       : std_logic := '0';
+  signal GPS_TX_FPGA_RX       : std_logic := '0';
 
-    constant ClockPeriodInNanoSec_for_UART : integer := 10; --10ns for Clock100MHz
-    constant BaudRate_FT232 : integer := 9600;
-    constant BaudRate_GPS : integer := 9600;
-    constant BaudRate_RPI : integer := 115200;
+  constant ClockPeriodInNanoSec_for_UART : integer := 10;  --10ns for Clock100MHz
+  constant BaudRate_FT232                : integer := 9600;
+  constant BaudRate_GPS                  : integer := 9600;
+  constant BaudRate_RPI                  : integer := 115200;
 
-    signal ft232TxData : std_logic_vector(7 downto 0) := (others => '0');
-    signal ft232RxData : std_logic_vector(7 downto 0) := (others => '0');
-    signal ft232RxDataLatched : std_logic_vector(7 downto 0) := (others => '0');
-    signal ft232TxEnable : std_logic := '0';
-    signal ft232Received : std_logic := '0';
-    signal ft232TxReady : std_logic := '0';
+  signal ft232TxData        : std_logic_vector(7 downto 0) := (others => '0');
+  signal ft232RxData        : std_logic_vector(7 downto 0) := (others => '0');
+  signal ft232RxDataLatched : std_logic_vector(7 downto 0) := (others => '0');
+  signal ft232TxEnable      : std_logic                    := '0';
+  signal ft232Received      : std_logic                    := '0';
+  signal ft232TxReady       : std_logic                    := '0';
 
-    signal gpsTxData : std_logic_vector(7 downto 0) := (others => '0');
-    signal gpsRxData : std_logic_vector(7 downto 0) := (others => '0');
-    signal gpsTxEnable : std_logic := '0';
-    signal gpsReceived : std_logic := '0';
-    signal gpsTxReady : std_logic := '0';
+  signal gpsTxData   : std_logic_vector(7 downto 0) := (others => '0');
+  signal gpsRxData   : std_logic_vector(7 downto 0) := (others => '0');
+  signal gpsTxEnable : std_logic                    := '0';
+  signal gpsReceived : std_logic                    := '0';
+  signal gpsTxReady  : std_logic                    := '0';
 
-    signal rpiTxData : std_logic_vector(7 downto 0) := (others => '0');
-    signal rpiRxData : std_logic_vector(7 downto 0) := (others => '0');
-    signal rpiTxEnable : std_logic := '0';
-    signal rpiReceived : std_logic := '0';
-    signal rpiTxReady : std_logic := '0';
+  signal rpiTxData   : std_logic_vector(7 downto 0) := (others => '0');
+  signal rpiRxData   : std_logic_vector(7 downto 0) := (others => '0');
+  signal rpiTxEnable : std_logic                    := '0';
+  signal rpiReceived : std_logic                    := '0';
+  signal rpiTxReady  : std_logic                    := '0';
 
   constant UART_CANNOT_RECEIVE : std_logic := '1';
-  constant UART_CAN_RECEIVE : std_logic := '0';
+  constant UART_CAN_RECEIVE    : std_logic := '0';
 
   ---------------------------------------------
   -- Time
   ---------------------------------------------
-  signal GPS_1PPS : std_logic  := '0';
-  signal gpsData :  std_logic_vector(7 downto 0);  
-  signal gpsDataEnable :  std_logic;
-  signal gps1PPS :  std_logic;  
-  signal gpsDDMMYY : std_logic_vector(47 downto 0);  
-  signal gpsHHMMSS_SSS : std_logic_vector(71 downto 0);  
-  signal gpsDateTimeUpdatedSingleShot : std_logic;  
-  signal gps1PPSSingleShot : std_logic  ;
-  signal gpsLED : std_logic := '0';
+  signal GPS_1PPS                     : std_logic := '0';
+  signal gpsData                      : std_logic_vector(7 downto 0);
+  signal gpsDataEnable                : std_logic;
+  signal gps1PPS                      : std_logic;
+  signal gpsDDMMYY                    : std_logic_vector(47 downto 0);
+  signal gpsHHMMSS_SSS                : std_logic_vector(71 downto 0);
+  signal gpsDateTimeUpdatedSingleShot : std_logic;
+  signal gps1PPSSingleShot            : std_logic;
+  signal gpsLED                       : std_logic := '0';
 
   ---------------------------------------------
   -- ADC
   ---------------------------------------------
-  constant CountADCClock: integer := 5;
-  signal counterADCClock : integer range 0 to CountADCClock:= 0;
+  constant CountADCClock   : integer                          := 5;
+  signal   counterADCClock : integer range 0 to CountADCClock := 0;
 
 
 ---------------------------------------------
 
   -- UART debug signals
-  signal uartState : integer range 0 to 255 := 0;
-  signal uartStateNext : integer range 0 to 255 := 0;
-  signal uartStateAfterSend : integer range 0 to 255 := 0;
-  signal uartStateAfterSendNewLine : integer range 0 to 255 := 0;
-  constant UART_STATE_SEND : integer := 250;
-  constant UART_STATE_SEND_WAIT1 : integer := 251;
-  constant UART_STATE_SEND_WAIT2 : integer := 252;
-  constant UART_STATE_SEND_NEWLINE : integer := 253;
-  constant UART_STATE_SEND_NEWLINE_1 : integer := 254;
-  signal uartLED : std_logic := '0';
+  signal   uartState                 : integer range 0 to 255 := 0;
+  signal   uartStateNext             : integer range 0 to 255 := 0;
+  signal   uartStateAfterSend        : integer range 0 to 255 := 0;
+  signal   uartStateAfterSendNewLine : integer range 0 to 255 := 0;
+  constant UART_STATE_SEND           : integer                := 250;
+  constant UART_STATE_SEND_WAIT1     : integer                := 251;
+  constant UART_STATE_SEND_WAIT2     : integer                := 252;
+  constant UART_STATE_SEND_NEWLINE   : integer                := 253;
+  constant UART_STATE_SEND_NEWLINE_1 : integer                := 254;
+  signal   uartLED                   : std_logic              := '0';
 
   -- waveform debug
   signal WaveformCountMax : integer range 0 to 65535 := 512;
-  signal waveformCount : integer range 0 to 65535 := 0;
+  signal waveformCount    : integer range 0 to 65535 := 0;
 
-  signal waveformFIFO_WriteData : std_logic_vector(9 downto 0);
+  signal waveformFIFO_WriteData   : std_logic_vector(9 downto 0);
   signal waveformFIFO_WriteEnable : std_logic;
-  signal waveformFIFO_ReadEnable : std_logic;
-  signal waveformFIFO_ReadData : std_logic_vector(9 downto 0);
-  signal waveformFIFO_Full : std_logic;
-  signal waveformFIFO_Empty : std_logic;
-  signal waveformFIFO_DataCount : std_logic_vector(11 downto 0);
-  signal selectedADCIndex : integer range 0 to NADCChannels-1 := 0;
+  signal waveformFIFO_ReadEnable  : std_logic;
+  signal waveformFIFO_ReadData    : std_logic_vector(9 downto 0);
+  signal waveformFIFO_Full        : std_logic;
+  signal waveformFIFO_Empty       : std_logic;
+  signal waveformFIFO_DataCount   : std_logic_vector(11 downto 0);
+  signal selectedADCIndex         : integer range 0 to NADCChannels-1 := 0;
 
-  signal triggeredWaveformFIFO_WriteData : std_logic_vector(9 downto 0);
+  signal triggeredWaveformFIFO_WriteData   : std_logic_vector(9 downto 0);
   signal triggeredWaveformFIFO_WriteEnable : std_logic;
-  signal triggeredWaveformFIFO_ReadEnable : std_logic;
-  signal triggeredWaveformFIFO_ReadData : std_logic_vector(9 downto 0);
-  signal triggeredWaveformFIFO_Full : std_logic;
-  signal triggeredWaveformFIFO_Empty : std_logic;
-  signal triggeredWaveformFIFO_DataCount : std_logic_vector(11 downto 0);
+  signal triggeredWaveformFIFO_ReadEnable  : std_logic;
+  signal triggeredWaveformFIFO_ReadData    : std_logic_vector(9 downto 0);
+  signal triggeredWaveformFIFO_Full        : std_logic;
+  signal triggeredWaveformFIFO_Empty       : std_logic;
+  signal triggeredWaveformFIFO_DataCount   : std_logic_vector(11 downto 0);
 
   signal ft232Sent10BitData : std_logic_vector(9 downto 0);
 
@@ -698,30 +698,30 @@ signal GPS_TX_FPGA_RX : std_logic := '0';
   signal Count1secAtADCClock : integer                                := 200000000;
   signal adcClockCounter     : integer range 0 to Count1secAtADCClock := 0;
 
-	signal led1sec : std_logic :='0';
+  signal led1sec : std_logic := '0';
 
-  signal ft232OutputSelector : integer range 0 to 7 := 0; -- 0 = FPGA, 1 = ADC, 2 = GPS
-  constant FT232_OUTPUT_MODE_FPGA : integer := 0;
-  constant FT232_OUTPUT_MODE_ADC : integer := 1;
-  constant FT232_OUTPUT_MODE_GPS : integer := 2;
+  signal   ft232OutputSelector    : integer range 0 to 7 := 0;  -- 0 = FPGA, 1 = ADC, 2 = GPS
+  constant FT232_OUTPUT_MODE_FPGA : integer              := 0;
+  constant FT232_OUTPUT_MODE_ADC  : integer              := 1;
+  constant FT232_OUTPUT_MODE_GPS  : integer              := 2;
 
-	signal FPGA_GPIO0 : std_logic;
+  signal FPGA_GPIO0 : std_logic;
 
+
+  signal Baseline        : Vector10Bits(7 downto 0);
+  signal BaselineSum     : std_logic_vector(12 downto 0) := (others => '0');
+  signal BaselineAverage : std_logic_vector(9 downto 0)  := (others => '0');
+  signal Delta           : integer range 0 to 65535      := 0;
+  signal Threshold       : integer range 0 to 1023       := 530;
+  signal Trigger         : std_logic                     := '0';
+  signal TriggerCount    : std_logic_vector(11 downto 0) := (others => '0');
   
-  signal Baseline : Vector10Bits(7 downto 0);
-  signal BaselineSum : std_logic_vector(12 downto 0) := (others => '0');
-  signal BaselineAverage : std_logic_vector(9 downto 0) := (others => '0');
-  signal Delta : integer range 0 to 65535 := 0;
-  signal Threshold : integer range 0 to 1023 := 530;
-  signal Trigger : std_logic := '0';
-  signal TriggerCount : std_logic_vector(11 downto 0) := (others => '0');
-	
 begin
 
   
   instanceOfBlinker : entity work.Blinker
     generic map(
-      LedBlinkDuration => 10000000        -- 100ms = 10ns * 10000000
+      LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
       )
     port map(
       clock     => Clock100MHz,
@@ -741,12 +741,12 @@ begin
       blinkOut  => FPGA_GPIO0
       );
 
-	led_op <= iLED;
-	--iLED(7) <= led1sec;
- -- iLED(6) <= uartLED;
- -- iLED(5) <= gpsLED;
-  iLED(7 downto 0) <= conv_std_logic_vector(uartState,8);
-  
+  led_op           <= iLED;
+  --iLED(7) <= led1sec;
+  -- iLED(6) <= uartLED;
+  -- iLED(5) <= gpsLED;
+  iLED(7 downto 0) <= conv_std_logic_vector(uartState, 8);
+
 
   transmitClock <= Clock100MHz;
   receiveClock  <= Clock200MHz;
@@ -784,7 +784,7 @@ begin
   HDR_B_BP(29)   <= ADC3_CLK;
   HDR_B_BP(30)   <= 'Z';
   SPW_DIN        <= HDR_B_BP(30);
-  
+
   -- GPIO Input mode
   --HDR_B_BP(31)   <= 'Z';
   --FPGA_GPIO0     <= HDR_B_BP(31);
@@ -819,32 +819,32 @@ begin
   ---------------------------------------------
   -- Process
   ---------------------------------------------
- 
+
   instanceOfWaveformFIFO : entity work.WaveformFIFO
-  port map(
-   clk => Clock100MHz,
-   rst => Reset,
-   din => waveformFIFO_WriteData,
-   wr_en => waveformFIFO_WriteEnable,
-   rd_en => waveformFIFO_ReadEnable,
-   dout => waveformFIFO_ReadData,
-   full => waveformFIFO_Full,
-   empty => waveformFIFO_Empty,
-   data_count => waveformFIFO_DataCount 
-  );
+    port map(
+      clk        => Clock100MHz,
+      rst        => Reset,
+      din        => waveformFIFO_WriteData,
+      wr_en      => waveformFIFO_WriteEnable,
+      rd_en      => waveformFIFO_ReadEnable,
+      dout       => waveformFIFO_ReadData,
+      full       => waveformFIFO_Full,
+      empty      => waveformFIFO_Empty,
+      data_count => waveformFIFO_DataCount
+      );
 
   instanceOfTriggeredWaveformFIFO2 : entity work.WaveformFIFO
-  port map(
-   clk => Clock100MHz,
-   rst => Reset,
-   din => triggeredWaveformFIFO_WriteData,
-   wr_en => triggeredWaveformFIFO_WriteEnable,
-   rd_en => triggeredWaveformFIFO_ReadEnable,
-   dout => triggeredWaveformFIFO_ReadData,
-   full => triggeredWaveformFIFO_Full,
-   empty => triggeredWaveformFIFO_Empty,
-   data_count => triggeredWaveformFIFO_DataCount 
-  );
+    port map(
+      clk        => Clock100MHz,
+      rst        => Reset,
+      din        => triggeredWaveformFIFO_WriteData,
+      wr_en      => triggeredWaveformFIFO_WriteEnable,
+      rd_en      => triggeredWaveformFIFO_ReadEnable,
+      dout       => triggeredWaveformFIFO_ReadData,
+      full       => triggeredWaveformFIFO_Full,
+      empty      => triggeredWaveformFIFO_Empty,
+      data_count => triggeredWaveformFIFO_DataCount
+      );
 
   process(Clock100MHz, reset)
   begin
@@ -853,7 +853,7 @@ begin
     elsif(Clock100MHz = '1' and Clock100MHz'event)then
       if(counter1sec = Count1sec)then
         counter1sec <= 0;
-        led1sec         <= not led1sec;
+        led1sec     <= not led1sec;
       else
         counter1sec <= counter1sec + 1;
       end if;
@@ -863,17 +863,17 @@ begin
   process(Clock100MHz, reset)
   begin
     if(reset = '1')then
-      uartLED <= '0';
-      uartState <= 0;
-      uartStateNext <= 0;
+      uartLED            <= '0';
+      uartState          <= 0;
+      uartStateNext      <= 0;
       uartStateAfterSend <= 0;
-      ft232TxEnable <= '0';
-      waveformCount <= 0;
-      TriggerCount <= (others => '0');
+      ft232TxEnable      <= '0';
+      waveformCount      <= 0;
+      TriggerCount       <= (others => '0');
     elsif(Clock100MHz = '1' and Clock100MHz'event)then
 
       ADCClock_previous <= AdcClock;
-      if(adcClock='0' and adcClock_previous='1')then
+      if(adcClock = '0' and adcClock_previous = '1')then
         adcData(0) <= "1111111111"-ADC0_D;
         adcData(1) <= "1111111111"-ADC1_D;
         adcData(2) <= "1111111111"-ADC2_D;
@@ -888,12 +888,12 @@ begin
         Baseline(1) <= Baseline(0);
         Baseline(0) <= adcData(selectedADCIndex);
 
-        BaselineSum <= ("000" & Baseline(7)) + ("000" & Baseline(6)) + ("000" & Baseline(5)) + ("000" & Baseline(4)) + ("000" & Baseline(3)) + ("000" & Baseline(2)) + ("000" & Baseline(1)) + ("000" & Baseline(0));
+        BaselineSum     <= ("000" & Baseline(7)) + ("000" & Baseline(6)) + ("000" & Baseline(5)) + ("000" & Baseline(4)) + ("000" & Baseline(3)) + ("000" & Baseline(2)) + ("000" & Baseline(1)) + ("000" & Baseline(0));
         BaselineAverage <= BaselineSum(12 downto 3);
-        Delta <= conv_integer(BaselineAverage)-conv_integer(ADCData(selectedADCIndex));
+        Delta           <= conv_integer(BaselineAverage)-conv_integer(ADCData(selectedADCIndex));
         --if( Threshold < Delta ) then
-        if (conv_integer(ADCData(selectedADCIndex))>Threshold)then
-          Trigger <= '1';
+        if (conv_integer(ADCData(selectedADCIndex)) > Threshold)then
+          Trigger      <= '1';
           TriggerCount <= TriggerCount + 1;
         else
           Trigger <= '0';
@@ -902,363 +902,363 @@ begin
 
 
       case uartState is
-      	when 0 =>
-          ft232TxEnable <= '0';
-          waveformCount <= 0;
-          triggeredWaveformFIFO_ReadEnable <= '0';
+        when 0 =>
+          ft232TxEnable                     <= '0';
+          waveformCount                     <= 0;
+          triggeredWaveformFIFO_ReadEnable  <= '0';
           triggeredWaveformFIFO_WriteEnable <= '0';
 
-      		--receive
-      		if(ft232Received='1')then
-      			ft232RxDataLatched <= ft232RxData;
-      			uartState <= 1;
-          elsif(counter1sec=3e7)then
+          --receive
+          if(ft232Received = '1')then
+            ft232RxDataLatched <= ft232RxData;
+            uartState          <= 1;
+          elsif(counter1sec = 3e7)then
             uartState <= 120;
-          elsif(counter1sec=5e7)then
-            uartState <= 200; -- ADC
-          elsif(counter1sec=7e7)then
-            uartState <= 195; -- send trigger count and FIFO status
-          elsif(counter1sec=Count1sec)then
-            uartState <= 100; -- GPS
-          elsif(triggeredWaveformFIFO_Empty='1' and Trigger='1')then
-            uartState <= 180; -- start recording triggered waveform
-      		end if;
-      	when 1 =>
-      		--wait until uartReceived is back to 0
-      		if(ft232Received='0')then
-	      		uartState <= 2;
-	      	end if;
-      	when 2=>
-      		if(ft232RxDataLatched=x"61")then -- 'a'
-      			uartState <= 200; -- start sending ADC data
-          elsif(ft232RxDataLatched=x"67")then -- 'g'
-            uartState <= 100; -- start sending GPS data
-      		elsif(ft232RxDataLatched=x"6C")then -- 'l'
-      			uartLED <= not uartLED;
-      			uartState <= 0;
-          elsif(ft232RxDataLatched=x"77")then -- 'w'
+          elsif(counter1sec = 5e7)then
+            uartState <= 200;           -- ADC
+          elsif(counter1sec = 7e7)then
+            uartState <= 195;           -- send trigger count and FIFO status
+          elsif(counter1sec = Count1sec)then
+            uartState <= 100;           -- GPS
+          elsif(triggeredWaveformFIFO_Empty = '1' and Trigger = '1')then
+            uartState <= 180;           -- start recording triggered waveform
+          end if;
+        when 1 =>
+          --wait until uartReceived is back to 0
+          if(ft232Received = '0')then
+            uartState <= 2;
+          end if;
+        when 2 =>
+          if(ft232RxDataLatched = x"61")then     -- 'a'
+            uartState <= 200;           -- start sending ADC data
+          elsif(ft232RxDataLatched = x"67")then  -- 'g'
+            uartState <= 100;           -- start sending GPS data
+          elsif(ft232RxDataLatched = x"6C")then  -- 'l'
+            uartLED   <= not uartLED;
+            uartState <= 0;
+          elsif(ft232RxDataLatched = x"77")then  -- 'w'
             --record waveform
             uartState <= 150;
-          elsif(ft232RxDataLatched=x"30")then -- '0'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"30")then  -- '0'
+            uartState        <= 0;
             selectedADCIndex <= 0;
-          elsif(ft232RxDataLatched=x"31")then -- '1'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"31")then  -- '1'
+            uartState        <= 0;
             selectedADCIndex <= 1;
-          elsif(ft232RxDataLatched=x"32")then -- '2'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"32")then  -- '2'
+            uartState        <= 0;
             selectedADCIndex <= 2;
-          elsif(ft232RxDataLatched=x"33")then -- '3'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"33")then  -- '3'
+            uartState        <= 0;
             selectedADCIndex <= 3;
-          elsif(ft232RxDataLatched=x"35")then -- '5'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"35")then  -- '5'
+            uartState        <= 0;
             WaveformCountMax <= 256;
-          elsif(ft232RxDataLatched=x"36")then -- '6'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"36")then  -- '6'
+            uartState        <= 0;
             WaveformCountMax <= 512;
-          elsif(ft232RxDataLatched=x"37")then -- '7'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"37")then  -- '7'
+            uartState        <= 0;
             WaveformCountMax <= 1024;
-          elsif(ft232RxDataLatched=x"38")then -- '8'
-            uartState <= 0;
+          elsif(ft232RxDataLatched = x"38")then  -- '8'
+            uartState        <= 0;
             WaveformCountMax <= 2045;
-          elsif(ft232RxDataLatched=x"3C")then -- '<'
-            uartState <= 0;
-            Threshold <= Threshold - 10;
-            ft232Sent10BitData <= conv_std_logic_vector(Threshold - 10,10);
-            ft232TxData <= x"74"; -- t
-            uartState <= UART_STATE_SEND;
+          elsif(ft232RxDataLatched = x"3C")then  -- '<'
+            uartState          <= 0;
+            Threshold          <= Threshold - 10;
+            ft232Sent10BitData <= conv_std_logic_vector(Threshold - 10, 10);
+            ft232TxData        <= x"74";         -- t
+            uartState          <= UART_STATE_SEND;
             uartStateAfterSend <= 201;
-          elsif(ft232RxDataLatched=x"3E")then -- '>'
-            uartState <= 0;
-            Threshold <= Threshold + 10;
-            ft232Sent10BitData <= conv_std_logic_vector(Threshold + 10,10);
-            ft232TxData <= x"74"; -- t
-            uartState <= UART_STATE_SEND;
+          elsif(ft232RxDataLatched = x"3E")then  -- '>'
+            uartState          <= 0;
+            Threshold          <= Threshold + 10;
+            ft232Sent10BitData <= conv_std_logic_vector(Threshold + 10, 10);
+            ft232TxData        <= x"74";         -- t
+            uartState          <= UART_STATE_SEND;
             uartStateAfterSend <= 201;
-          elsif(ft232RxDataLatched=x"63")then -- 'c'
+          elsif(ft232RxDataLatched = x"63")then  -- 'c'
             uartState <= 0;
-          elsif(ft232RxDataLatched=x"74")then -- 't' read triggered waveform
-            uartState <= 181; -- send triggered waveform
+          elsif(ft232RxDataLatched = x"74")then  -- 't' read triggered waveform
+            uartState <= 181;           -- send triggered waveform
           else
-            ft232TxData <= x"2A"; -- *
-            uartState <= UART_STATE_SEND;
-            uartStateAfterSend <= UART_STATE_SEND_NEWLINE;
+            ft232TxData               <= x"2A";  -- *
+            uartState                 <= UART_STATE_SEND;
+            uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
             uartStateAfterSendNewLine <= 0;
-      		end if;
+          end if;
 
-      -------------------
-      -- record/send triggered waveform
-      -------------------
-      when 180 => -- record triggered waveform
-          if(adcClock='0' and adcClock_previous='1')then
+          -------------------
+          -- record/send triggered waveform
+          -------------------
+        when 180 =>                     -- record triggered waveform
+          if(adcClock = '0' and adcClock_previous = '1')then
             if(waveformCount = waveformCountMax)then
               triggeredWaveformFIFO_WriteEnable <= '0';
-              uartState <= 0;
+              uartState                         <= 0;
             else
-              triggeredWaveformFIFO_WriteData <= ADCData(selectedADCIndex);
+              triggeredWaveformFIFO_WriteData   <= ADCData(selectedADCIndex);
               triggeredWaveformFIFO_WriteEnable <= '1';
-              waveformCount <= waveformCount + 1;
+              waveformCount                     <= waveformCount + 1;
             end if;
           else
             triggeredWaveformFIFO_WriteEnable <= '0';
           end if;
-      when 181 => -- send triggered waveform
-        if(triggeredWaveformFIFO_Empty='1')then
-          --waveform sending completed
-          uartState <= 0; -- go back to idle
-        else
-          triggeredWaveformFIFO_ReadEnable <= '1';
-          uartState <= 182;
-        end if;
-      when 182 =>
-        triggeredWaveformFIFO_ReadEnable <= '0';
-        uartState <= 183;
-      when 183 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(9)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 184;
-      when 184 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(8 downto 6)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 185;
-      when 185 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(5 downto 3)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 186;
-      when 186 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(2 downto 0)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 187;
-      when 187 =>
-        ft232TxData <= x"20"; -- space
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 181;
-        when 190 => -- clear fifo
-          if(triggeredWaveformFIFO_Empty='1')then
+        when 181 =>                     -- send triggered waveform
+          if(triggeredWaveformFIFO_Empty = '1')then
+            --waveform sending completed
+            uartState <= 0;             -- go back to idle
+          else
+            triggeredWaveformFIFO_ReadEnable <= '1';
+            uartState                        <= 182;
+          end if;
+        when 182 =>
+          triggeredWaveformFIFO_ReadEnable <= '0';
+          uartState                        <= 183;
+        when 183 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(9)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 184;
+        when 184 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(8 downto 6)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 185;
+        when 185 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(5 downto 3)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 186;
+        when 186 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(2 downto 0)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 187;
+        when 187 =>
+          ft232TxData        <= x"20";  -- space
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 181;
+        when 190 =>                     -- clear fifo
+          if(triggeredWaveformFIFO_Empty = '1')then
             triggeredWaveformFIFO_ReadEnable <= '0';
-            uartState <= 0;
+            uartState                        <= 0;
           else
             triggeredWaveformFIFO_ReadEnable <= '1';
           end if;
-        when 195 => -- send trigger count and FIFO status
-        ft232TxData <= x"54"; -- T
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 196;
+        when 195 =>                     -- send trigger count and FIFO status
+          ft232TxData        <= x"54";  -- T
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 196;
         when 196 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer((not triggeredWaveformFIFO_Empty) & TriggerCount(10 downto 9)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 197;
-      when 197 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(8 downto 6)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 198;
-      when 198 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(5 downto 3)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 199;
-      when 199 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(2 downto 0)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= UART_STATE_SEND_NEWLINE;
-        uartStateAfterSendNewLine <= 0; -- idle
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer((not triggeredWaveformFIFO_Empty) & TriggerCount(10 downto 9)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 197;
+        when 197 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(8 downto 6)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 198;
+        when 198 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(5 downto 3)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 199;
+        when 199 =>
+          ft232TxData               <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(2 downto 0)), 8);
+          uartState                 <= UART_STATE_SEND;
+          uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
+          uartStateAfterSendNewLine <= 0;  -- idle
 
 
-      -------------------
-      -- send BaselineAverage
-      -------------------
-      when 120 => --Baseline
-      ft232Sent10BitData <= BaselineAverage;
-        ft232TxData <= x"42"; -- B
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 201;
-      -------------------
-      -- send ADC data
-      -------------------
-  		when 200 => --ADC
-      ft232Sent10BitData <= adcData(selectedADCIndex);
-        ft232TxData <= x"41"; -- A
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 201;
-      -------------------
-      -- send subroutine
-      -------------------
-      when 201 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(9)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 202;
-      when 202 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(8 downto 6)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 203;
-      when 203 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(5 downto 3)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 204;
-      when 204 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(2 downto 0)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= UART_STATE_SEND_NEWLINE;
-        uartStateAfterSendNewLine <= 0; -- idle
+          -------------------
+          -- send BaselineAverage
+          -------------------
+        when 120 =>                        --Baseline
+          ft232Sent10BitData <= BaselineAverage;
+          ft232TxData        <= x"42";     -- B
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 201;
+          -------------------
+          -- send ADC data
+          -------------------
+        when 200 =>                        --ADC
+          ft232Sent10BitData <= adcData(selectedADCIndex);
+          ft232TxData        <= x"41";     -- A
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 201;
+          -------------------
+          -- send subroutine
+          -------------------
+        when 201 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(9)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 202;
+        when 202 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(8 downto 6)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 203;
+        when 203 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(5 downto 3)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 204;
+        when 204 =>
+          ft232TxData               <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(2 downto 0)), 8);
+          uartState                 <= UART_STATE_SEND;
+          uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
+          uartStateAfterSendNewLine <= 0;  -- idle
 
-      -------------------
-      -- send GPS data
-      -------------------
-      when 100 => -- send GPS data
-        ft232TxData <= x"47";-- G
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 101;
-      when 101 => --YY
-        ft232TxData <= gpsDDMMYY(15 downto 8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 102;
-      when 102 => --YY
-        ft232TxData <= gpsDDMMYY(7 downto 0);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 103;
-      when 103 => --MM
-        ft232TxData <= gpsDDMMYY(31 downto 24);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 104;
-      when 104 => --MM
-        ft232TxData <= gpsDDMMYY(23 downto 16);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 105;
-      when 105 => --DD
-        ft232TxData <= gpsDDMMYY(47 downto 40);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 106;
-      when 106 => --DD
-        ft232TxData <= gpsDDMMYY(39 downto 32);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 107;
-      when 107 => --DD
-        ft232TxData <= x"5F"; -- _
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 108;
-      when 108 => --hh
-        ft232TxData <= gpsHHMMSS_SSS(71 downto 64);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 109;
-      when 109 => --hh
-        ft232TxData <= gpsHHMMSS_SSS(63 downto 56);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 110;
-      when 110 => --mm
-        ft232TxData <= gpsHHMMSS_SSS(55 downto 48);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 111;
-      when 111 => --mm
-        ft232TxData <= gpsHHMMSS_SSS(47 downto 40);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 112;
-      when 112 => --ss
-        ft232TxData <= gpsHHMMSS_SSS(39 downto 32);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 113;
-      when 113 => --ss
-        ft232TxData <= gpsHHMMSS_SSS(31 downto 24);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 114;
-      when 114 => --.
-        ft232TxData <= x"2E"; -- .
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 115;
-      when 115 => --ss
-        ft232TxData <= gpsHHMMSS_SSS(23 downto 16);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 116;
-      when 116 => --ss
-        ft232TxData <= gpsHHMMSS_SSS(15 downto 8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 117;
-      when 117 => --ss
-        ft232TxData <= gpsHHMMSS_SSS(7 downto 0);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= UART_STATE_SEND_NEWLINE;
-        uartStateAfterSendNewLine <= 0; -- idle
+          -------------------
+          -- send GPS data
+          -------------------
+        when 100 =>                        -- send GPS data
+          ft232TxData        <= x"47";     -- G
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 101;
+        when 101 =>                        --YY
+          ft232TxData        <= gpsDDMMYY(15 downto 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 102;
+        when 102 =>                        --YY
+          ft232TxData        <= gpsDDMMYY(7 downto 0);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 103;
+        when 103 =>                        --MM
+          ft232TxData        <= gpsDDMMYY(31 downto 24);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 104;
+        when 104 =>                        --MM
+          ft232TxData        <= gpsDDMMYY(23 downto 16);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 105;
+        when 105 =>                        --DD
+          ft232TxData        <= gpsDDMMYY(47 downto 40);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 106;
+        when 106 =>                        --DD
+          ft232TxData        <= gpsDDMMYY(39 downto 32);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 107;
+        when 107 =>                        --DD
+          ft232TxData        <= x"5F";     -- _
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 108;
+        when 108 =>                        --hh
+          ft232TxData        <= gpsHHMMSS_SSS(71 downto 64);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 109;
+        when 109 =>                        --hh
+          ft232TxData        <= gpsHHMMSS_SSS(63 downto 56);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 110;
+        when 110 =>                        --mm
+          ft232TxData        <= gpsHHMMSS_SSS(55 downto 48);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 111;
+        when 111 =>                        --mm
+          ft232TxData        <= gpsHHMMSS_SSS(47 downto 40);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 112;
+        when 112 =>                        --ss
+          ft232TxData        <= gpsHHMMSS_SSS(39 downto 32);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 113;
+        when 113 =>                        --ss
+          ft232TxData        <= gpsHHMMSS_SSS(31 downto 24);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 114;
+        when 114 =>                        --.
+          ft232TxData        <= x"2E";     -- .
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 115;
+        when 115 =>                        --ss
+          ft232TxData        <= gpsHHMMSS_SSS(23 downto 16);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 116;
+        when 116 =>                        --ss
+          ft232TxData        <= gpsHHMMSS_SSS(15 downto 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 117;
+        when 117 =>                        --ss
+          ft232TxData               <= gpsHHMMSS_SSS(7 downto 0);
+          uartState                 <= UART_STATE_SEND;
+          uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
+          uartStateAfterSendNewLine <= 0;  -- idle
 
-      -------------------
-      -- record waveform
-      -------------------
-      when 150 =>
-        if(adcClock='0' and adcClock_previous='1')then
-          if(waveformCount = waveformCountMax)then
-            waveformFIFO_WriteEnable <= '0';
-            uartState <= 151;
+          -------------------
+          -- record waveform
+          -------------------
+        when 150 =>
+          if(adcClock = '0' and adcClock_previous = '1')then
+            if(waveformCount = waveformCountMax)then
+              waveformFIFO_WriteEnable <= '0';
+              uartState                <= 151;
+            else
+              waveformFIFO_WriteData   <= ADCData(selectedADCIndex);
+              waveformFIFO_WriteEnable <= '1';
+              waveformCount            <= waveformCount + 1;
+            end if;
           else
-            waveformFIFO_WriteData <= ADCData(selectedADCIndex);
-            waveformFIFO_WriteEnable <= '1';
-            waveformCount <= waveformCount + 1;
+            waveformFIFO_WriteEnable <= '0';
           end if;
-        else
-          waveformFIFO_WriteEnable <= '0';
-        end if;
-      when 151 =>
-        if(waveformFIFO_Empty='1')then
-          --waveform recording and sending completed
-          uartState <= 0; -- go back to idle
-        else
-          waveformFIFO_ReadEnable <= '1';
-          uartState <= 152;
-        end if;
-      when 152 =>
-        waveformFIFO_ReadEnable <= '0';
-        uartState <= 160;
-      when 160 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(9)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 161;
-      when 161 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(8 downto 6)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 162;
-      when 162 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(5 downto 3)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 163;
-      when 163 =>
-        ft232TxData <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(2 downto 0)),8);
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 164;
-      when 164 =>
-        ft232TxData <= x"20"; -- space
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= 151;
+        when 151 =>
+          if(waveformFIFO_Empty = '1')then
+            --waveform recording and sending completed
+            uartState <= 0;             -- go back to idle
+          else
+            waveformFIFO_ReadEnable <= '1';
+            uartState               <= 152;
+          end if;
+        when 152 =>
+          waveformFIFO_ReadEnable <= '0';
+          uartState               <= 160;
+        when 160 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(9)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 161;
+        when 161 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(8 downto 6)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 162;
+        when 162 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(5 downto 3)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 163;
+        when 163 =>
+          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(2 downto 0)), 8);
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 164;
+        when 164 =>
+          ft232TxData        <= x"20";  -- space
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= 151;
 
-      -------------------
-      -- tx subroutine
-      -------------------
-      when UART_STATE_SEND =>
-        if(ft232TxReady='1')then
-          ft232TxEnable <= '1';
-          uartState <= UART_STATE_SEND_WAIT1;
-        else
+          -------------------
+          -- tx subroutine
+          -------------------
+        when UART_STATE_SEND =>
+          if(ft232TxReady = '1')then
+            ft232TxEnable <= '1';
+            uartState     <= UART_STATE_SEND_WAIT1;
+          else
+            ft232TxEnable <= '0';
+          end if;
+        when UART_STATE_SEND_WAIT1 =>
           ft232TxEnable <= '0';
-        end if;
-      when UART_STATE_SEND_WAIT1 =>
-        ft232TxEnable <= '0';
-        if(ft232TxReady='0')then
-          uartState <= UART_STATE_SEND_WAIT2;
-        end if;
-      when UART_STATE_SEND_WAIT2 =>
-        if(ft232TxReady='1')then
-          uartState <= uartStateAfterSend;
-        end if;
-      -------------------
-      -- send CR+LF
-      -------------------
-      when UART_STATE_SEND_NEWLINE =>
-        ft232TxData <= x"0D"; -- CR
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= UART_STATE_SEND_NEWLINE_1;
-      when UART_STATE_SEND_NEWLINE_1 =>
-        ft232TxData <= x"0A"; -- LF
-        uartState <= UART_STATE_SEND;
-        uartStateAfterSend <= uartStateAfterSendNewLine;
-      when others =>
-        uartState <= 0;
+          if(ft232TxReady = '0')then
+            uartState <= UART_STATE_SEND_WAIT2;
+          end if;
+        when UART_STATE_SEND_WAIT2 =>
+          if(ft232TxReady = '1')then
+            uartState <= uartStateAfterSend;
+          end if;
+          -------------------
+          -- send CR+LF
+          -------------------
+        when UART_STATE_SEND_NEWLINE =>
+          ft232TxData        <= x"0D";  -- CR
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= UART_STATE_SEND_NEWLINE_1;
+        when UART_STATE_SEND_NEWLINE_1 =>
+          ft232TxData        <= x"0A";  -- LF
+          uartState          <= UART_STATE_SEND;
+          uartStateAfterSend <= uartStateAfterSendNewLine;
+        when others =>
+          uartState <= 0;
       end case;
     end if;
   end process;
@@ -1274,7 +1274,7 @@ begin
     CLKIN_IN        => xtalclk_ip,
     LOCKED_OUT      => open,
     CLK2X_OUT       => Clock100MHz,
-    CLKFX_OUT       => Clock200MHz,         -- 200MHz
+    CLKFX_OUT       => Clock200MHz,     -- 200MHz
     CLKFX180_OUT    => open,            -- 200MHz
     CLKDV_OUT       => open,
     CLKIN_IBUFG_OUT => open,
@@ -1318,7 +1318,7 @@ begin
   ---------------------------------------------
   uartFT232 : UARTInterface
     generic map(
-      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,   --ns
+      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
       BaudRate                  => BaudRate_FT232
       )
     port map(
@@ -1338,28 +1338,28 @@ begin
   ---------------------------------------------
   instanceOfGPSUARTInterface : entity work.GPSUARTInterface
     generic map(
-      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,   --ns
+      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
       BaudRate                  => BaudRate_GPS
       )
     port map(
-     clock => Clock100MHz,
-     reset => reset,
-     --from GPS
-     gpsUARTIn => GPS_TX_FPGA_RX,
-     gps1PPS => GPS_1PPS,
-     --processed signals
-     gpsDDMMYY => gpsDDMMYY,
-     gpsHHMMSS_SSS => gpsHHMMSS_SSS,
-     gpsDateTimeUpdatedSingleShot => gpsDateTimeUpdatedSingleShot,
-     gps1PPSSingleShot => gps1PPSSingleShot 
-    );
+      clock                        => Clock100MHz,
+      reset                        => reset,
+      --from GPS
+      gpsUARTIn                    => GPS_TX_FPGA_RX,
+      gps1PPS                      => GPS_1PPS,
+      --processed signals
+      gpsDDMMYY                    => gpsDDMMYY,
+      gpsHHMMSS_SSS                => gpsHHMMSS_SSS,
+      gpsDateTimeUpdatedSingleShot => gpsDateTimeUpdatedSingleShot,
+      gps1PPSSingleShot            => gps1PPSSingleShot
+      );
 
   ---------------------------------------------
   -- UART (Raspberry Pi)
   ---------------------------------------------
   uartRPI : UARTInterface
     generic map(
-      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,   --ns
+      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
       BaudRate                  => BaudRate_RPI
       )
     port map(
@@ -1385,7 +1385,7 @@ begin
     elsif(Clock100MHz = '1' and Clock100MHz'event)then
       if(counterADCClock = CountADCClock)then
         counterADCClock <= 0;
-        ADCClock         <= not ADCClock;
+        ADCClock        <= not ADCClock;
       else
         counterADCClock <= counterADCClock + 1;
       end if;
