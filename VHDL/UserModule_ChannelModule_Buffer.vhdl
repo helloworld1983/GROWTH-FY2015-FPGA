@@ -188,7 +188,8 @@ begin
         when Idle =>
           DataIn(15)           <= '1';  --start flag
           DataIn(14 downto 12) <= ChNumber;  --ChNumber of this module
-          DataIn(11 downto 0)  <= AdcDataIn;
+			 DataIn(11 downto 10) <= "00";
+          DataIn(9 downto 0)  <= AdcDataIn;
           if (TriggerIn = '1' and Full = '0' and NoRoomForMoreEvent_internal = '0') then
             RealTime_latched <= Realtime;
             WriteEnable      <= '1';
@@ -207,12 +208,12 @@ begin
           if (TriggerIn = '0') then
                                         --Write Header Separator
             DataIn(15 downto 12) <= HEADER_FLAG;  --header flag
-            DataIn(11 downto 0)  <= x"005";  --indicate that size of header is 'three words'
+            DataIn(9 downto 0)  <= "00"&x"05";  --indicate that size of header is 'three words'
             UserModule_state     <= WriteHeader_1;
           else
             DataIn(15)           <= '0';
             DataIn(14 downto 12) <= "000";
-            DataIn(11 downto 0)  <= AdcDataIn;
+            DataIn(9 downto 0)  <= AdcDataIn;
           end if;
         when WriteHeader_1 =>
           DataIn           <= RealTime_latched(WidthOfRealTime-1 downto 32);

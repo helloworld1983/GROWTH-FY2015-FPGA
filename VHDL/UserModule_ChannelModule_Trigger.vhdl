@@ -104,7 +104,7 @@ begin
     if (GlobalReset = '0') then
       --is this process invoked with Clock Event?
     elsif (Clock'event and Clock = '1') then
-      ave_a1          <= "0000" & AdcDataIn; ave_a2 <= ave_a1; ave_a3 <= ave_a2; ave_a4 <= ave_a3;
+      ave_a1          <= "000000" & AdcDataIn; ave_a2 <= ave_a1; ave_a3 <= ave_a2; ave_a4 <= ave_a3;
       ave_b1          <= ave_a4; ave_b2 <= ave_b1; ave_b3 <= ave_b2; ave_b4 <= ave_b3;
       Average_Before4 <= ("00" & ave_b1) + ("00" & ave_b2) + ("00" & ave_b3) + ("00" & ave_b4);
       Average_After4  <= ("00" & ave_a1) + ("00" & ave_a2) + ("00" & ave_a3) + ("00" & ave_a4);
