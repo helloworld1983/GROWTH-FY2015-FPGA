@@ -290,7 +290,7 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   ---------------------------------------------
   -- Consumer Manager
   ---------------------------------------------
-  component UserModule_ConsumerManager_SocketFIFO is
+  component UserModule_ConsumerManager_EventFIFO is
     generic(
       bufferDataCountWidth : integer := 11;
       InitialAddress       : std_logic_vector(15 downto 0);
@@ -304,21 +304,26 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
       Consumer2ConsumerMgr_vector : in  Signal_Consumer2ConsumerMgr_Vector(NumberOfConsumerNodes-1 downto 0);
       ConsumerMgr2Consumer_vector : out Signal_ConsumerMgr2Consumer_Vector(NumberOfConsumerNodes-1 downto 0);
       ---------------------------------------------
-      -- SocketFIFO signals
+      -- Event FIFO signals
       ---------------------------------------------
-      tcpSendFIFOData             : out std_logic_vector(7 downto 0);
-      tcpSendFIFOWriteEnable      : out std_logic;
-      tcpSendFIFOFull             : in  std_logic;
-      tcpReceiveFIFOEmpty         : in  std_logic;
-      tcpReceiveFIFOData          : in  std_logic_vector(7 downto 0);
-      tcpReceiveFIFODataCount     : in  std_logic_vector(bufferDataCountWidth-1 downto 0);
-      tcpReceiveFIFOReadEnable    : out std_logic;
-      tcpConnectionEstablished    : in  std_logic;
+      EventFIFOWriteData          : out std_logic_vector(15 downto 0);
+      EventFIFOWriteEnable        : out std_logic;
+      EventFIFOFull               : in  std_logic;
       --clock and reset
       Clock                       : in  std_logic;
       GlobalReset                 : in  std_logic
       );
   end component;
+
+  signal EventFIFOWriteData   : std_logic_vector(15 downto 0);
+  signal EventFIFOWriteEnable : std_logic;
+  signal EventFIFOFull        : std_logic;
+  signal EventFIFOReadData    : std_logic_vector(15 downto 0);
+  signal EventFIFOReadEnable  : std_logic;
+  signal EventFIFOEmpty       : std_logic;
+
+  type   EventFIFOReadStates is (Initialization, Idle, Read1, Ack, Finalize);
+  signal EventFIFOReadState : EventFIFOReadStates := Initialization;
 
   ---------------------------------------------
   -- UART
@@ -535,46 +540,52 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
       statisticalInformation       : out bit32X8Array
       );
   end component;
+
+  type   RMAPAccessModeType is (RMAPAccessMode_iBus, RMAPAccessMode_EventFIFO);
+  signal RMAPAccessMode : RMAPAccessModeType := RMAPAccessMode_iBus;
+
   constant RMAPTargetLogicalAddress : std_logic_vector(7 downto 0) := x"FE";
   constant RMAPTargetKey            : std_logic_vector(7 downto 0) := x"00";
   constant RMAPTargetCRCRevision    : std_logic                    := '1';  -- RMAP Draft F version
 
 
-  constant tcpRMAPBusWidth                    : integer                                           := 16;
-  signal   tcpRMAPBusMasterCycleOut           : std_logic                                         := '0';
-  signal   tcpRMAPBusMasterStrobeOut          : std_logic                                         := '0';
-  signal   tcpRMAPBusMasterAddressOut         : std_logic_vector (31 downto 0)                    := (others => '0');
-  signal   tcpRMAPBusMasterByteEnableOut      : std_logic_vector ((tcpRMAPBusWidth/8)-1 downto 0) := (others => '0');
-  signal   tcpRMAPBusMasterDataIn             : std_logic_vector (tcpRMAPBusWidth-1 downto 0)     := (others => '0');
-  signal   tcpRMAPBusMasterDataOut            : std_logic_vector (tcpRMAPBusWidth-1 downto 0)     := (others => '0');
-  signal   tcpRMAPBusMasterWriteEnableOut     : std_logic                                         := '0';
-  signal   tcpRMAPBusMasterReadEnableOut      : std_logic                                         := '0';
-  signal   tcpRMAPBusMasterAcknowledgeIn      : std_logic                                         := '0';
-  signal   tcpRMAPBusMasterTimeOutErrorIn     : std_logic                                         := '0';
-  signal   tcpRMAPProcessStateInteger         : integer range 0 to 7;
-  signal   tcpRMAPProcessStateIntegerPrevious : integer range 0 to 7;
-  signal   tcpRMAPCommandStateOut             : commandstatemachine;
-  signal   tcpRMAPReplyStateOut               : replystatemachine;
-  signal   tcpRMAPCommandStateOutAscii        : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   tcpRMAPReplyStateOutAscii          : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   tcpRMAPLogicalAddressOut           : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   tcpRMAPCommandOut                  : std_logic_vector(3 downto 0)                      := (others => '0');
-  signal   tcpRMAPKeyOut                      : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   tcpRMAPAddressOut                  : std_logic_vector(31 downto 0)                     := (others => '0');
-  signal   tcpRMAPDataLengthOut               : std_logic_vector(23 downto 0)                     := (others => '0');
-  signal   tcpRMAPRequestAuthorization        : std_logic                                         := '0';
-  signal   tcpRMAPAuthorizeIn                 : std_logic                                         := '0';
-  signal   tcpRMAPRejectIn                    : std_logic                                         := '0';
-  signal   tcpRMAPReplyStatusIn               : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   tcpRMAPErrorCode                   : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   stateOutSSDTP2TCPToSpaceWire       : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   stateOutSSDTP2SpaceWireToTCP       : std_logic_vector(7 downto 0)                      := (others => '0');
-  signal   tcpRMAPStatisticalInformationClear : std_logic                                         := '0';
-  signal   tcpRMAPStatisticalInformation      : bit32x8array;
-
-  signal tcpRMAPBusMasterWriteEnableOutPrevious : std_logic := '0';
-  signal tcpRMAPBusMasterReadEnableOutPrevious  : std_logic := '0';
-  signal tcpRMAPBusMasterAcknowledgeInPrevious  : std_logic := '0';
+  constant uartRMAPBusWidth                       : integer                                            := 16;
+  signal   uartRMAPBusMasterCycleOut              : std_logic                                          := '0';
+  signal   uartRMAPBusMasterStrobeOut             : std_logic                                          := '0';
+  signal   uartRMAPBusMasterAddressOut            : std_logic_vector (31 downto 0)                     := (others => '0');
+  signal   uartRMAPBusMasterByteEnableOut         : std_logic_vector ((uartRMAPBusWidth/8)-1 downto 0) := (others => '0');
+  signal   uartRMAPBusMasterDataIn                : std_logic_vector (uartRMAPBusWidth-1 downto 0)     := (others => '0');
+  signal   uartRMAPBusMasterDataIn_iBus           : std_logic_vector (uartRMAPBusWidth-1 downto 0)     := (others => '0');
+  signal   uartRMAPBusMasterDataIn_EventFIFO      : std_logic_vector (uartRMAPBusWidth-1 downto 0)     := (others => '0');
+  signal   uartRMAPBusMasterDataOut               : std_logic_vector (uartRMAPBusWidth-1 downto 0)     := (others => '0');
+  signal   uartRMAPBusMasterWriteEnableOut        : std_logic                                          := '0';
+  signal   uartRMAPBusMasterReadEnable            : std_logic                                          := '0';
+  signal   uartRMAPBusMasterReadEnable_iBus       : std_logic                                          := '0';
+  signal   uartRMAPBusMasterReadEnable_EventFIFO  : std_logic                                          := '0';
+  signal   uartRMAPBusMasterAcknowledge           : std_logic                                          := '0';
+  signal   uartRMAPBusMasterAcknowledge_iBus      : std_logic                                          := '0';
+  signal   uartRMAPBusMasterAcknowledge_EventFIFO : std_logic                                          := '0';
+  signal   uartRMAPBusMasterTimeOutErrorIn        : std_logic                                          := '0';
+  signal   uartRMAPProcessStateInteger            : integer range 0 to 7;
+  signal   uartRMAPProcessStateIntegerPrevious    : integer range 0 to 7;
+  signal   uartRMAPCommandStateOut                : commandstatemachine;
+  signal   uartRMAPReplyStateOut                  : replystatemachine;
+  signal   uartRMAPCommandStateOutAscii           : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   uartRMAPReplyStateOutAscii             : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   uartRMAPLogicalAddressOut              : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   uartRMAPCommandOut                     : std_logic_vector(3 downto 0)                       := (others => '0');
+  signal   uartRMAPKeyOut                         : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   uartRMAPAddressOut                     : std_logic_vector(31 downto 0)                      := (others => '0');
+  signal   uartRMAPDataLengthOut                  : std_logic_vector(23 downto 0)                      := (others => '0');
+  signal   uartRMAPRequestAuthorization           : std_logic                                          := '0';
+  signal   uartRMAPAuthorizeIn                    : std_logic                                          := '0';
+  signal   uartRMAPRejectIn                       : std_logic                                          := '0';
+  signal   uartRMAPReplyStatusIn                  : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   uartRMAPErrorCode                      : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   stateOutSSDTP2TCPToSpaceWire           : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   stateOutSSDTP2SpaceWireToTCP           : std_logic_vector(7 downto 0)                       := (others => '0');
+  signal   uartRMAPStatisticalInformationClear    : std_logic                                          := '0';
+  signal   uartRMAPStatisticalInformation         : bit32x8array;
 
 ---------------------------------------------
 -- ADC
@@ -608,9 +619,10 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal GPS_TX_FPGA_RX       : std_logic := '0';
 
   constant ClockPeriodInNanoSec_for_UART : integer := 10;  --10ns for Clock100MHz
-  constant BaudRate_FT232                : integer := 9600;
+  constant BaudRate_FT232                : integer := 230400;
   constant BaudRate_GPS                  : integer := 9600;
-  constant BaudRate_RPI                  : integer := 115200;
+  --constant BaudRate_RPI                  : integer := 115200;
+
 
   signal ft232TxData        : std_logic_vector(7 downto 0) := (others => '0');
   signal ft232RxData        : std_logic_vector(7 downto 0) := (others => '0');
@@ -618,6 +630,14 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal ft232TxEnable      : std_logic                    := '0';
   signal ft232Received      : std_logic                    := '0';
   signal ft232TxReady       : std_logic                    := '0';
+
+  signal ft232ReceiveFIFOWriteData   : std_logic_vector(7 downto 0) := (others => '0');
+  signal ft232ReceiveFIFOWriteEnable : std_logic                    := '0';
+  signal ft232ReceiveFIFOReadEnable  : std_logic                    := '0';
+  signal ft232ReceiveFIFOReadData    : std_logic_vector(7 downto 0) := (others => '0');
+  signal ft232ReceiveFIFOFull        : std_logic                    := '0';
+  signal ft232ReceiveFIFOEmpty       : std_logic                    := '0';
+  signal ft232ReceiveFIFODataCount   : std_logic_vector(9 downto 0) := (others => '0');
 
   signal gpsTxData   : std_logic_vector(7 downto 0) := (others => '0');
   signal gpsRxData   : std_logic_vector(7 downto 0) := (others => '0');
@@ -653,44 +673,7 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   constant CountADCClock   : integer                          := 5;
   signal   counterADCClock : integer range 0 to CountADCClock := 0;
 
-
----------------------------------------------
-
-  -- UART debug signals
-  signal   uartState                 : integer range 0 to 255 := 0;
-  signal   uartStateNext             : integer range 0 to 255 := 0;
-  signal   uartStateAfterSend        : integer range 0 to 255 := 0;
-  signal   uartStateAfterSendNewLine : integer range 0 to 255 := 0;
-  constant UART_STATE_SEND           : integer                := 250;
-  constant UART_STATE_SEND_WAIT1     : integer                := 251;
-  constant UART_STATE_SEND_WAIT2     : integer                := 252;
-  constant UART_STATE_SEND_NEWLINE   : integer                := 253;
-  constant UART_STATE_SEND_NEWLINE_1 : integer                := 254;
-  signal   uartLED                   : std_logic              := '0';
-
-  -- waveform debug
-  signal WaveformCountMax : integer range 0 to 65535 := 512;
-  signal waveformCount    : integer range 0 to 65535 := 0;
-
-  signal waveformFIFO_WriteData   : std_logic_vector(9 downto 0);
-  signal waveformFIFO_WriteEnable : std_logic;
-  signal waveformFIFO_ReadEnable  : std_logic;
-  signal waveformFIFO_ReadData    : std_logic_vector(9 downto 0);
-  signal waveformFIFO_Full        : std_logic;
-  signal waveformFIFO_Empty       : std_logic;
-  signal waveformFIFO_DataCount   : std_logic_vector(11 downto 0);
-  signal selectedADCIndex         : integer range 0 to NADCChannels-1 := 0;
-
-  signal triggeredWaveformFIFO_Reset       : std_logic := '0';
-  signal triggeredWaveformFIFO_WriteData   : std_logic_vector(9 downto 0);
-  signal triggeredWaveformFIFO_WriteEnable : std_logic;
-  signal triggeredWaveformFIFO_ReadEnable  : std_logic;
-  signal triggeredWaveformFIFO_ReadData    : std_logic_vector(9 downto 0);
-  signal triggeredWaveformFIFO_Full        : std_logic;
-  signal triggeredWaveformFIFO_Empty       : std_logic;
-  signal triggeredWaveformFIFO_DataCount   : std_logic_vector(11 downto 0);
-
-  signal ft232Sent10BitData : std_logic_vector(9 downto 0);
+	---------------------------------------------
 
   signal GlobalReset : std_logic := '1';  --active-low reset signal (used in iBus and old UserModule modules)
 
@@ -708,15 +691,29 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
 
   signal FPGA_GPIO0 : std_logic;
 
-
-  signal Baseline        : Vector10Bits(7 downto 0);
-  signal BaselineSum     : std_logic_vector(12 downto 0) := (others => '0');
-  signal BaselineAverage : std_logic_vector(9 downto 0)  := (others => '0');
-  signal Delta           : integer range 0 to 65535      := 0;
-  signal Threshold       : integer range 0 to 1023       := 530;
-  signal Trigger         : std_logic                     := '0';
-  signal TriggerCount    : std_logic_vector(11 downto 0) := (others => '0');
+  signal spwFIFOReadEnable   : std_logic := '0';
+  signal spwFIFODataOut      : std_logic_vector(8 downto 0) := (others => '0');
+  signal spwFIFOEmpty        : std_logic := '0';
+  signal spwFIFOFull         : std_logic := '0';
+  signal spwFIFOWriteEnable : std_logic := '0';
+  signal spwFIFODataIn      : std_logic_vector (8 downto 0) := (others => '0');
+  signal spwFIFODataCount    : std_logic_vector(5 downto 0) := (others => '0');
   
+  --ssdtp debug
+  signal ssdtpDebugState : integer range 0 to 255 := 0;
+
+  signal ft232SendFIFOClock : std_logic;
+signal ft232SendFIFOReset : std_logic;
+signal ft232SendFIFODataIn : std_logic_vector(7 downto 0);
+signal ft232SendFIFOWriteEnable : std_logic;
+signal ft232SendFIFOReadEnable : std_logic;
+signal ft232SendFIFODataOut : std_logic_vector(7 downto 0);
+signal ft232SendFIFOFull : std_logic;
+signal ft232SendFIFOEmpty : std_logic;
+signal ft232SendFIFODataCount : std_logic_vector(9 downto 0);
+
+
+
 begin
 
   
@@ -731,22 +728,60 @@ begin
       blinkOut  => gpsLED
       );
 
-  instanceOfBlinkerTrigger : entity work.Blinker
-    generic map(
-      LedBlinkDuration => 100000        -- 1ms = 10ns * 100000
-      )
-    port map(
-      clock     => Clock100MHz,
-      reset     => reset,
-      triggerIn => Trigger,
-      blinkOut  => FPGA_GPIO0
-      );
+  --instanceOfBlinker_2 : entity work.Blinker
+  --  generic map(
+  --    LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
+  --    )
+  --  port map(
+  --    clock     => Clock100MHz,
+  --    reset     => reset,
+  --    triggerIn => uartRMAPBusMasterReadEnable,
+  --    blinkOut  => iLED(0)
+  --    );
+  
+  --instanceOfBlinker_3 : entity work.Blinker
+  --  generic map(
+  --    LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
+  --    )
+  --  port map(
+  --    clock     => Clock100MHz,
+  --    reset     => reset,
+  --    triggerIn => ft232ReceiveFIFOReadEnable,
+  --    blinkOut  => iLED(1)
+  --    );
+
+  --instanceOfBlinker_4 : entity work.Blinker
+  --  generic map(
+  --    LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
+  --    )
+  --  port map(
+  --    clock     => Clock100MHz,
+  --    reset     => reset,
+  --    triggerIn => ft232ReceiveFIFOWriteEnable,
+  --    blinkOut  => iLED(2)
+  --    );
+
+  --instanceOfBlinker_5 : entity work.Blinker
+  --  generic map(
+  --    LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
+  --    )
+  --  port map(
+  --    clock     => Clock100MHz,
+  --    reset     => reset,
+  --    triggerIn => ft232ReceiveFIFOReadEnable,
+  --    blinkOut  => iLED(3)
+  --    );
+
+  --iLED(6 downto 4) <= ft232ReceiveFIFODataCount(2 downto 0);
+  --iLED(7) <= ft232ReceiveFIFOEmpty;
+
+  iLED <= stateOutSSDTP2SpaceWireToTCP;
 
   led_op           <= iLED;
   --iLED(7) <= led1sec;
   -- iLED(6) <= uartLED;
   -- iLED(5) <= gpsLED;
-  iLED(7 downto 0) <= conv_std_logic_vector(uartState, 8);
+  --  iLED(7 downto 0) <= conv_std_logic_vector(uartState, 8);
 
 
   transmitClock <= Clock100MHz;
@@ -815,37 +850,12 @@ begin
   -- When UART receive buffer has room, assert
   -- FT232_nCTS_FPGA_nRTS <= UART_CAN_RECEIVE; --'0'
 
-  FT232_nCTS_FPGA_nRTS <= UART_CAN_RECEIVE;
+  TRIG_OUT <= (0 => ChModule2ChMgr(0).Trigger, 1 => ChModule2ChMgr(1).Trigger, 2 => ChModule2ChMgr(2).Trigger, 3 => ChModule2ChMgr(3).Trigger);
 
   ---------------------------------------------
   -- Process
   ---------------------------------------------
 
-  instanceOfWaveformFIFO : entity work.WaveformFIFO
-    port map(
-      clk        => Clock100MHz,
-      rst        => Reset,
-      din        => waveformFIFO_WriteData,
-      wr_en      => waveformFIFO_WriteEnable,
-      rd_en      => waveformFIFO_ReadEnable,
-      dout       => waveformFIFO_ReadData,
-      full       => waveformFIFO_Full,
-      empty      => waveformFIFO_Empty,
-      data_count => waveformFIFO_DataCount
-      );
-
-  instanceOfTriggeredWaveformFIFO2 : entity work.WaveformFIFO
-    port map(
-      clk        => Clock100MHz,
-      rst        => triggeredWaveformFIFO_Reset,
-      din        => triggeredWaveformFIFO_WriteData,
-      wr_en      => triggeredWaveformFIFO_WriteEnable,
-      rd_en      => triggeredWaveformFIFO_ReadEnable,
-      dout       => triggeredWaveformFIFO_ReadData,
-      full       => triggeredWaveformFIFO_Full,
-      empty      => triggeredWaveformFIFO_Empty,
-      data_count => triggeredWaveformFIFO_DataCount
-      );
 
   process(Clock100MHz, reset)
   begin
@@ -861,412 +871,19 @@ begin
     end if;
   end process;
 
-  process(Clock100MHz, reset)
-  begin
-    if(reset = '1')then
-      uartLED            <= '0';
-      uartState          <= 0;
-      uartStateNext      <= 0;
-      uartStateAfterSend <= 0;
-      ft232TxEnable      <= '0';
-      waveformCount      <= 0;
-      TriggerCount       <= (others => '0');
-    elsif(Clock100MHz = '1' and Clock100MHz'event)then
+  --process(Clock100MHz, reset)
+  --begin
+  --  if(reset = '1')then
+  --  elsif(Clock100MHz = '1' and Clock100MHz'event)then
+  --    if(adcClock = '0' and adcClock_previous = '1')then
+  --      adcData(0) <= "1111111111"-ADC0_D;
+  --      adcData(1) <= "1111111111"-ADC1_D;
+  --      adcData(2) <= "1111111111"-ADC2_D;
+  --      adcData(3) <= "1111111111"-ADC3_D;
+  --    end if;
+  --  end if;
+  --end process;
 
-      ADCClock_previous <= AdcClock;
-      if(adcClock = '0' and adcClock_previous = '1')then
-        adcData(0) <= "1111111111"-ADC0_D;
-        adcData(1) <= "1111111111"-ADC1_D;
-        adcData(2) <= "1111111111"-ADC2_D;
-        adcData(3) <= "1111111111"-ADC3_D;
-
-        Baseline(7) <= Baseline(6);
-        Baseline(6) <= Baseline(5);
-        Baseline(5) <= Baseline(4);
-        Baseline(4) <= Baseline(3);
-        Baseline(3) <= Baseline(2);
-        Baseline(2) <= Baseline(1);
-        Baseline(1) <= Baseline(0);
-        Baseline(0) <= adcData(selectedADCIndex);
-
-        BaselineSum     <= ("000" & Baseline(7)) + ("000" & Baseline(6)) + ("000" & Baseline(5)) + ("000" & Baseline(4)) + ("000" & Baseline(3)) + ("000" & Baseline(2)) + ("000" & Baseline(1)) + ("000" & Baseline(0));
-        BaselineAverage <= BaselineSum(12 downto 3);
-        Delta           <= conv_integer(BaselineAverage)-conv_integer(ADCData(selectedADCIndex));
-        --if( Threshold < Delta ) then
-        if (conv_integer(ADCData(selectedADCIndex)) > Threshold)then
-          Trigger      <= '1';
-          TriggerCount <= TriggerCount + 1;
-        else
-          Trigger <= '0';
-        end if;
-      end if;
-
-
-      case uartState is
-        when 0 =>
-          ft232TxEnable                     <= '0';
-          waveformCount                     <= 0;
-          triggeredWaveformFIFO_ReadEnable  <= '0';
-          triggeredWaveformFIFO_WriteEnable <= '0';
-          triggeredWaveformFIFO_Reset       <= '0';
-
-          --receive
-          if(ft232Received = '1')then
-            ft232RxDataLatched <= ft232RxData;
-            uartState          <= 1;
-          elsif(counter1sec = 3e7)then
-            uartState <= 120;
-          elsif(counter1sec = 5e7)then
-            uartState <= 200;           -- ADC
-          elsif(counter1sec = 7e7)then
-            uartState <= 195;           -- send trigger count and FIFO status
-          elsif(counter1sec = Count1sec)then
-            uartState <= 100;           -- GPS
-          elsif(triggeredWaveformFIFO_Empty = '1' and Trigger = '1')then
-            uartState <= 180;           -- start recording triggered waveform
-          end if;
-        when 1 =>
-          --wait until uartReceived is back to 0
-          if(ft232Received = '0')then
-            uartState <= 2;
-          end if;
-        when 2 =>
-          if(ft232RxDataLatched = x"61")then     -- 'a'
-            uartState <= 200;           -- start sending ADC data
-          elsif(ft232RxDataLatched = x"67")then  -- 'g'
-            uartState <= 100;           -- start sending GPS data
-          elsif(ft232RxDataLatched = x"6C")then  -- 'l'
-            uartLED   <= not uartLED;
-            uartState <= 0;
-          elsif(ft232RxDataLatched = x"77")then  -- 'w'
-            --record waveform
-            uartState <= 150;
-          elsif(ft232RxDataLatched = x"30")then  -- '0'
-            uartState        <= 0;
-            selectedADCIndex <= 0;
-          elsif(ft232RxDataLatched = x"31")then  -- '1'
-            uartState        <= 0;
-            selectedADCIndex <= 1;
-          elsif(ft232RxDataLatched = x"32")then  -- '2'
-            uartState        <= 0;
-            selectedADCIndex <= 2;
-          elsif(ft232RxDataLatched = x"33")then  -- '3'
-            uartState        <= 0;
-            selectedADCIndex <= 3;
-          elsif(ft232RxDataLatched = x"35")then  -- '5'
-            uartState        <= 0;
-            WaveformCountMax <= 256;
-          elsif(ft232RxDataLatched = x"36")then  -- '6'
-            uartState        <= 0;
-            WaveformCountMax <= 512;
-          elsif(ft232RxDataLatched = x"37")then  -- '7'
-            uartState        <= 0;
-            WaveformCountMax <= 1024;
-          elsif(ft232RxDataLatched = x"38")then  -- '8'
-            uartState        <= 0;
-            WaveformCountMax <= 2045;
-          elsif(ft232RxDataLatched = x"3C")then  -- '<'
-            uartState          <= 0;
-            Threshold          <= Threshold - 10;
-            ft232Sent10BitData <= conv_std_logic_vector(Threshold - 10, 10);
-            ft232TxData        <= x"74";         -- t
-            uartState          <= UART_STATE_SEND;
-            uartStateAfterSend <= 201;
-          elsif(ft232RxDataLatched = x"3E")then  -- '>'
-            uartState          <= 0;
-            Threshold          <= Threshold + 10;
-            ft232Sent10BitData <= conv_std_logic_vector(Threshold + 10, 10);
-            ft232TxData        <= x"74";         -- t
-            uartState          <= UART_STATE_SEND;
-            uartStateAfterSend <= 201;
-          elsif(ft232RxDataLatched = x"63")then  -- 'c'
-            uartState                   <= 0;
-            triggeredWaveformFIFO_Reset <= '1';
-          elsif(ft232RxDataLatched = x"74")then  -- 't' read triggered waveform
-            uartState <= 181;           -- send triggered waveform
-          else
-            ft232TxData               <= x"2A";  -- *
-            uartState                 <= UART_STATE_SEND;
-            uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
-            uartStateAfterSendNewLine <= 0;
-          end if;
-
-          -------------------
-          -- record/send triggered waveform
-          -------------------
-        when 180 =>                     -- record triggered waveform
-          if(adcClock = '0' and adcClock_previous = '1')then
-            if(waveformCount = waveformCountMax)then
-              triggeredWaveformFIFO_WriteEnable <= '0';
-              uartState                         <= 0;
-            else
-              triggeredWaveformFIFO_WriteData   <= ADCData(selectedADCIndex);
-              triggeredWaveformFIFO_WriteEnable <= '1';
-              waveformCount                     <= waveformCount + 1;
-            end if;
-          else
-            triggeredWaveformFIFO_WriteEnable <= '0';
-          end if;
-        when 181 =>                     -- send triggered waveform
-          if(triggeredWaveformFIFO_Empty = '1')then
-            --waveform sending completed
-            uartState                 <= UART_STATE_SEND_NEWLINE;
-            uartStateAfterSendNewLine <= 0;  -- go back to idle after new line
-          else
-            triggeredWaveformFIFO_ReadEnable <= '1';
-            uartState                        <= 182;
-          end if;
-        when 182 =>
-          triggeredWaveformFIFO_ReadEnable <= '0';
-          uartState                        <= 183;
-        when 183 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(9)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 184;
-        when 184 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(8 downto 6)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 185;
-        when 185 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(5 downto 3)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 186;
-        when 186 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(triggeredWaveformFIFO_ReadData(2 downto 0)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 187;
-        when 187 =>
-          ft232TxData        <= x"20";  -- space
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 181;
-        when 190 =>                     -- clear fifo
-          if(triggeredWaveformFIFO_Empty = '1')then
-            triggeredWaveformFIFO_ReadEnable <= '0';
-            uartState                        <= 0;
-          else
-            triggeredWaveformFIFO_ReadEnable <= '1';
-          end if;
-        when 195 =>                     -- send trigger count and FIFO status
-          ft232TxData        <= x"54";  -- T
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 196;
-        when 196 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer((not triggeredWaveformFIFO_Empty) & TriggerCount(10 downto 9)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 197;
-        when 197 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(8 downto 6)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 198;
-        when 198 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(5 downto 3)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 199;
-        when 199 =>
-          ft232TxData               <= x"30"+conv_std_logic_vector(conv_integer(TriggerCount(2 downto 0)), 8);
-          uartState                 <= UART_STATE_SEND;
-          uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
-          uartStateAfterSendNewLine <= 0;    -- idle
-
-
-          -------------------
-          -- send BaselineAverage
-          -------------------
-        when 120 =>                        --Baseline
-          ft232Sent10BitData <= BaselineAverage;
-          ft232TxData        <= x"42";     -- B
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 201;
-          -------------------
-          -- send ADC data
-          -------------------
-        when 200 =>                        --ADC
-          ft232Sent10BitData <= adcData(selectedADCIndex);
-          ft232TxData        <= x"41";     -- A
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 201;
-          -------------------
-          -- send subroutine
-          -------------------
-        when 201 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(9)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 202;
-        when 202 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(8 downto 6)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 203;
-        when 203 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(5 downto 3)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 204;
-        when 204 =>
-          ft232TxData               <= x"30"+conv_std_logic_vector(conv_integer(ft232Sent10BitData(2 downto 0)), 8);
-          uartState                 <= UART_STATE_SEND;
-          uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
-          uartStateAfterSendNewLine <= 0;  -- idle
-
-          -------------------
-          -- send GPS data
-          -------------------
-        when 100 =>                        -- send GPS data
-          ft232TxData        <= x"47";     -- G
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 101;
-        when 101 =>                        --YY
-          ft232TxData        <= gpsDDMMYY(15 downto 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 102;
-        when 102 =>                        --YY
-          ft232TxData        <= gpsDDMMYY(7 downto 0);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 103;
-        when 103 =>                        --MM
-          ft232TxData        <= gpsDDMMYY(31 downto 24);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 104;
-        when 104 =>                        --MM
-          ft232TxData        <= gpsDDMMYY(23 downto 16);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 105;
-        when 105 =>                        --DD
-          ft232TxData        <= gpsDDMMYY(47 downto 40);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 106;
-        when 106 =>                        --DD
-          ft232TxData        <= gpsDDMMYY(39 downto 32);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 107;
-        when 107 =>                        --DD
-          ft232TxData        <= x"5F";     -- _
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 108;
-        when 108 =>                        --hh
-          ft232TxData        <= gpsHHMMSS_SSS(71 downto 64);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 109;
-        when 109 =>                        --hh
-          ft232TxData        <= gpsHHMMSS_SSS(63 downto 56);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 110;
-        when 110 =>                        --mm
-          ft232TxData        <= gpsHHMMSS_SSS(55 downto 48);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 111;
-        when 111 =>                        --mm
-          ft232TxData        <= gpsHHMMSS_SSS(47 downto 40);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 112;
-        when 112 =>                        --ss
-          ft232TxData        <= gpsHHMMSS_SSS(39 downto 32);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 113;
-        when 113 =>                        --ss
-          ft232TxData        <= gpsHHMMSS_SSS(31 downto 24);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 114;
-        when 114 =>                        --.
-          ft232TxData        <= x"2E";     -- .
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 115;
-        when 115 =>                        --ss
-          ft232TxData        <= gpsHHMMSS_SSS(23 downto 16);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 116;
-        when 116 =>                        --ss
-          ft232TxData        <= gpsHHMMSS_SSS(15 downto 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 117;
-        when 117 =>                        --ss
-          ft232TxData               <= gpsHHMMSS_SSS(7 downto 0);
-          uartState                 <= UART_STATE_SEND;
-          uartStateAfterSend        <= UART_STATE_SEND_NEWLINE;
-          uartStateAfterSendNewLine <= 0;  -- idle
-
-          -------------------
-          -- record waveform
-          -------------------
-        when 150 =>
-          if(adcClock = '0' and adcClock_previous = '1')then
-            if(waveformCount = waveformCountMax)then
-              waveformFIFO_WriteEnable <= '0';
-              uartState                <= 151;
-            else
-              waveformFIFO_WriteData   <= ADCData(selectedADCIndex);
-              waveformFIFO_WriteEnable <= '1';
-              waveformCount            <= waveformCount + 1;
-            end if;
-          else
-            waveformFIFO_WriteEnable <= '0';
-          end if;
-        when 151 =>
-          if(waveformFIFO_Empty = '1')then
-            --waveform recording and sending completed
-            uartState                 <= UART_STATE_SEND_NEWLINE;
-            uartStateAfterSendNewLine <= 0;  -- go back to idle after new line
-          else
-            waveformFIFO_ReadEnable <= '1';
-            uartState               <= 152;
-          end if;
-        when 152 =>
-          waveformFIFO_ReadEnable <= '0';
-          uartState               <= 160;
-        when 160 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(9)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 161;
-        when 161 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(8 downto 6)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 162;
-        when 162 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(5 downto 3)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 163;
-        when 163 =>
-          ft232TxData        <= x"30"+conv_std_logic_vector(conv_integer(waveformFIFO_ReadData(2 downto 0)), 8);
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 164;
-        when 164 =>
-          ft232TxData        <= x"20";       -- space
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= 151;
-
-          -------------------
-          -- tx subroutine
-          -------------------
-        when UART_STATE_SEND =>
-          if(ft232TxReady = '1')then
-            ft232TxEnable <= '1';
-            uartState     <= UART_STATE_SEND_WAIT1;
-          else
-            ft232TxEnable <= '0';
-          end if;
-        when UART_STATE_SEND_WAIT1 =>
-          ft232TxEnable <= '0';
-          if(ft232TxReady = '0')then
-            uartState <= UART_STATE_SEND_WAIT2;
-          end if;
-        when UART_STATE_SEND_WAIT2 =>
-          if(ft232TxReady = '1')then
-            uartState <= uartStateAfterSend;
-          end if;
-          -------------------
-          -- send CR+LF
-          -------------------
-        when UART_STATE_SEND_NEWLINE =>
-          ft232TxData        <= x"0D";  -- CR
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= UART_STATE_SEND_NEWLINE_1;
-        when UART_STATE_SEND_NEWLINE_1 =>
-          ft232TxData        <= x"0A";  -- LF
-          uartState          <= UART_STATE_SEND;
-          uartStateAfterSend <= uartStateAfterSendNewLine;
-        when others =>
-          uartState <= 0;
-      end case;
-    end if;
-  end process;
 
   --============================================
   --============================================
@@ -1338,26 +955,152 @@ begin
       txReady   => ft232TxReady
       );
 
-  ---------------------------------------------
-  -- UART (GPS)
-  ---------------------------------------------
-  instanceOfGPSUARTInterface : entity work.GPSUARTInterface
+  uartReceiveFIFO : entity work.fifo8x1k
+    port map(
+      clk        => Clock100MHz,
+      rst        => Reset,
+      din        => ft232ReceiveFIFOWriteData,
+      wr_en      => ft232ReceiveFIFOWriteEnable,
+      rd_en      => ft232ReceiveFIFOReadEnable,
+      dout       => ft232ReceiveFIFOReadData,
+      full       => ft232ReceiveFIFOFull,
+      empty      => ft232ReceiveFIFOEmpty,
+      data_count => ft232ReceiveFIFODataCount
+      );
+
+uartSendFIFO : entity work.fifo8x1k
+port map (
+ clk => Clock100MHz,
+ rst => Reset,
+ din => ft232SendFIFODataIn,
+ wr_en => ft232SendFIFOWriteEnable,
+ rd_en => ft232SendFIFOReadEnable,
+ dout => ft232SendFIFODataOut,
+ full => ft232SendFIFOFull,
+ empty => ft232SendFIFOEmpty,
+ data_count => ft232SendFIFODataCount 
+);
+
+  FT232_nCTS_FPGA_nRTS        <= UART_CAN_RECEIVE when ft232ReceiveFIFOFull = '0' else UART_CANNOT_RECEIVE;
+  ft232ReceiveFIFOWriteData   <= ft232RxData;
+  ft232ReceiveFIFOWriteEnable <= ft232Received;
+
+  --============================================
+  --ssdtp debug
+  --============================================
+  instanceOfSSDTP2TCPToSpaceWire : entity work.SSDTP2TCPToSpaceWire
     generic map(
-      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
-      BaudRate                  => BaudRate_GPS
+        bufferDataCountWidth => ft232ReceiveFIFODataCount'length
       )
     port map(
-      clock                        => Clock100MHz,
-      reset                        => reset,
-      --from GPS
-      gpsUARTIn                    => GPS_TX_FPGA_RX,
-      gps1PPS                      => GPS_1PPS,
-      --processed signals
-      gpsDDMMYY                    => gpsDDMMYY,
-      gpsHHMMSS_SSS                => gpsHHMMSS_SSS,
-      gpsDateTimeUpdatedSingleShot => gpsDateTimeUpdatedSingleShot,
-      gps1PPSSingleShot            => gps1PPSSingleShot
+      tcpReceiveFIFOEmpty        => ft232ReceiveFIFOEmpty,
+      tcpReceiveFIFODataOut      => ft232ReceiveFIFOReadData,
+      tcpReceiveFIFODataCount    => ft232ReceiveFIFODataCount,
+      tcpReceiveFIFOReadEnable   => ft232ReceiveFIFOReadEnable,
+      spwTransmitFIFOWriteEnable => spwFIFOWriteEnable,
+      spwTransmitFIFODataIn      => spwFIFODataIn,
+      spwTransmitFIFOFull        => spwFIFOFull,
+      tickInOut                  => open,
+      timeInOut                  => open,
+      txClockDivideCount         => open,
+      stateOut                   => stateOutSSDTP2TCPToSpaceWire,
+      clock                      => Clock100MHz,
+      reset                      => reset
       );
+
+  instanceOfSSDTP2SpaceWireToTCP : entity work.SSDTP2SpaceWireToTCP
+    port map(
+      spwReceiveFIFOReadEnable => spwFIFOReadEnable,
+      spwReceiveFIFODataOut    => spwFIFODataOut,
+      spwReceiveFIFOEmpty      => spwFIFOEmpty,
+      spwReceiveFIFOFull       => spwFIFOFull,
+      tickOutIn                => '0',
+      timeOutIn                => "000000",
+      -- SocketVHDL signals
+      tcpSendFIFODataOut       => ft232SendFIFODataIn,
+      tcpSendFIFOWriteEnable   => ft232SendFIFOWriteEnable,
+      tcpSendFIFOFull          => ft232SendFIFOFull,
+      stateOut                 => stateOutSSDTP2SpaceWireToTCP,
+      clock                    => Clock100MHz,
+      reset                    => reset
+      );
+
+  spwFIFO : entity work.fifo9x1k
+    port map(
+      rst   => reset,
+      clk   => Clock100MHz,
+      din   => spwFIFODataIn,
+      wr_en => spwFIFOWriteEnable,
+      rd_en => spwFIFOReadEnable,
+      dout  => spwFIFODataOut,
+      full  => spwFIFOFull,
+      empty => spwFIFOEmpty
+      );
+
+  process(Clock100MHz, reset)
+  begin
+    if(reset = '1')then
+      rpiTxData <=  (others => '0');
+    elsif(Clock100MHz = '1' and Clock100MHz'event)then
+      if(spwFIFOWriteEnable='1')then
+        rpiTxData <= rpiTxData + 1;
+      end if;
+      if(counter1sec = Count1sec)then
+        rpiTxEnable <= '1';
+      else
+        rpiTxEnable <= '0';
+      end if;
+
+      case ssdtpDebugState is
+      when 0 =>
+        if(ft232SendFIFOEmpty='0' and ft232TxReady='1')then -- if not empty and Tx is ready
+          ft232SendFIFOReadEnable <= '1';
+          ssdtpDebugState <= 1;
+        else
+          ft232SendFIFOReadEnable <= '0';
+        end if;
+      when 1 =>
+        ft232SendFIFOReadEnable <= '0';
+        ssdtpDebugState <= 2;
+      when 2 =>
+        ft232TxData <= ft232SendFIFODataOut;
+        if(ft232TxReady='0')then
+          ft232TxEnable <= '0';
+          ssdtpDebugState <= 3;
+        else
+          ft232TxEnable <= '1';
+        end if;
+      when 3 =>
+        ft232TxEnable <= '0';
+        if(ft232TxReady='1')then
+          ssdtpDebugState <= 0;
+        end if;
+      when others =>
+        ssdtpDebugState <= 0;
+      end case;
+    end if;
+  end process;
+
+  -----------------------------------------------
+  ---- UART (GPS)
+  -----------------------------------------------
+  --instanceOfGPSUARTInterface : entity work.GPSUARTInterface
+  --  generic map(
+  --    InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
+  --    BaudRate                  => BaudRate_GPS
+  --    )
+  --  port map(
+  --    clock                        => Clock100MHz,
+  --    reset                        => reset,
+  --    --from GPS
+  --    gpsUARTIn                    => GPS_TX_FPGA_RX,
+  --    gps1PPS                      => GPS_1PPS,
+  --    --processed signals
+  --    gpsDDMMYY                    => gpsDDMMYY,
+  --    gpsHHMMSS_SSS                => gpsHHMMSS_SSS,
+  --    gpsDateTimeUpdatedSingleShot => gpsDateTimeUpdatedSingleShot,
+  --    gps1PPSSingleShot            => gps1PPSSingleShot
+  --    );
 
   ---------------------------------------------
   -- UART (Raspberry Pi)
@@ -1365,7 +1108,7 @@ begin
   uartRPI : UARTInterface
     generic map(
       InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
-      BaudRate                  => BaudRate_RPI
+      BaudRate                  => BaudRate_FT232
       )
     port map(
       Clock     => Clock100MHz,
@@ -1379,30 +1122,30 @@ begin
       txReady   => rpiTxReady
       );
 
-  ---------------------------------------------
-  -- ADC
-  ---------------------------------------------
+  --rpiTxData   <= ft232RxData;
+  --rpiTxEnable <= ft232Received;
 
-  -- ADC clock
-  process(Clock100MHz, reset)
-  begin
-    if(reset = '1')then
-    elsif(Clock100MHz = '1' and Clock100MHz'event)then
-      if(counterADCClock = CountADCClock)then
-        counterADCClock <= 0;
-        ADCClock        <= not ADCClock;
-      else
-        counterADCClock <= counterADCClock + 1;
-      end if;
-    end if;
-  end process;
-  ADC0_CLK <= AdcClock;
-  ADC1_CLK <= AdcClock;
-  ADC2_CLK <= AdcClock;
-  ADC3_CLK <= AdcClock;
+  -----------------------------------------------
+  ---- ADC
+  -----------------------------------------------
 
-  -- ADC Interface
-  -- todo
+  ---- ADC clock
+  --process(Clock100MHz, reset)
+  --begin
+  --  if(reset = '1')then
+  --  elsif(Clock100MHz = '1' and Clock100MHz'event)then
+  --    if(counterADCClock = CountADCClock)then
+  --      counterADCClock <= 0;
+  --      ADCClock        <= not ADCClock;
+  --    else
+  --      counterADCClock <= counterADCClock + 1;
+  --    end if;
+  --  end if;
+  --end process;
+  --ADC0_CLK <= AdcClock;
+  --ADC1_CLK <= AdcClock;
+  --ADC2_CLK <= AdcClock;
+  --ADC3_CLK <= AdcClock;
 
   -----------------------------------------------
   ---- Channel Manager
@@ -1422,7 +1165,7 @@ begin
   --    --control
   --    CommonGateIn               => '0',  -- todo: implement this
   --    --ADCClockSelection
-  --    ADCClockFrequencySelection => adcClockFrequencySelection,
+  --    ADCClockFrequencySelection => open,
   --    --clock and reset
   --    Clock                      => Clock100MHz,
   --    GlobalReset                => GlobalReset,
@@ -1443,7 +1186,7 @@ begin
   --      BusIF2BusController  => BusIF2BusController(i+1),
   --      BusController2BusIF  => BusController2BusIF(i+1),
   --      AdcDataIn            => AdcData(i),
-  --      AdcClockIn           => AdcClock(i/2),
+  --      AdcClockIn           => AdcClock,
   --      ChModule2ChMgr       => ChModule2ChMgr(i),
   --      ChMgr2ChModule       => ChMgr2ChModule(i),
   --      Consumer2ConsumerMgr => Consumer2ConsumerMgr(i),
@@ -1464,9 +1207,9 @@ begin
   -----------------------------------------------
   ---- Consumer Manager
   -----------------------------------------------
-  --instanceOfConsumerManager : UserModule_ConsumerManager_SocketFIFO
+  --instanceOfConsumerManager : entity work.UserModule_ConsumerManager_EventFIFO
   --  generic map(
-  --    bufferDataCountWidth => 11,
+  --    bufferDataCountWidth => EventFIFOWriteData'length,
   --    InitialAddress       => InitialAddressOf_ConsumerMgr,
   --    FinalAddress         => FinalAddressOf_ConsumerMgr
   --    )
@@ -1478,14 +1221,9 @@ begin
   --    Consumer2ConsumerMgr_vector => Consumer2ConsumerMgr,
   --    ConsumerMgr2Consumer_vector => ConsumerMgr2Consumer,
   --    -- SocketFIFO signals
-  --    tcpSendFIFOData             => iSocketSendFIFOWriteData(1),
-  --    tcpSendFIFOWriteEnable      => iSocketSendFIFOWriteEnable(1),
-  --    tcpSendFIFOFull             => iSocketSendFIFOFull(1),
-  --    tcpReceiveFIFOEmpty         => iSocketReceiveFIFOEmpty(1),
-  --    tcpReceiveFIFOData          => iSocketReceiveFIFOReadData(1),
-  --    tcpReceiveFIFODataCount     => iSocketReceiveFIFOCount(1),
-  --    tcpReceiveFIFOReadEnable    => iSocketReceiveFIFOReadEnable(1),
-  --    tcpConnectionEstablished    => iConnectionEstablished(1),
+  --    EventFIFOWriteData          => EventFIFOWriteData,
+  --    EventFIFOWriteEnable        => EventFIFOWriteEnable,
+  --    EventFIFOFull               => EventFIFOFull,
   --    --clock and reset
   --    Clock                       => Clock100MHz,
   --    GlobalReset                 => GlobalReset
@@ -1494,55 +1232,56 @@ begin
   -----------------------------------------------
   ---- SocketVHDL-RMAP
   -----------------------------------------------
-  --instanceOfSSDTP2RMAP : SSDTP2ToRMAPTargetBridge
+  
+  --instanceOfSSDTP2RMAP : entity work.SSDTP2ToRMAPTargetBridge
   --  generic map(
-  --    gBusWidth            => tcpRMAPBusWidth,  --16 for iBus bridging, 32 for SDRAM-RMAP bridging
-  --    bufferDataCountWidth => iSocketReceiveFIFOCount(1)'length
+  --    gBusWidth            => uartRMAPBusWidth,  --16 for iBus bridging, 32 for SDRAM-RMAP bridging
+  --    bufferDataCountWidth => ft232ReceiveFIFODataCount'length
   --    )
   --  port map(
   --    clock                        => Clock100MHz,
-  --    reset                        => not iConnectionEstablished(2),
-  --    -- TCP socket signals (send)
-  --    tcpSendFIFOData              => iSocketSendFIFOWriteData(2),
-  --    tcpSendFIFOWriteEnable       => iSocketSendFIFOWriteEnable(2),
-  --    tcpSendFIFOFull              => iSocketSendFIFOFull(2),
-  --    -- TCP socket signals (receive)
-  --    tcpReceiveFIFOEmpty          => iSocketReceiveFIFOEmpty(2),
-  --    tcpReceiveFIFOData           => iSocketReceiveFIFOReadData(2),
-  --    tcpReceiveFIFODataCount      => iSocketReceiveFIFOCount(2),
-  --    tcpReceiveFIFOReadEnable     => iSocketReceiveFIFOReadEnable(2),
+  --    reset                        => reset,
+  --    -- TCP socket signals (tcp send)
+  --    tcpSendFIFOData              => ft232TxData,
+  --    tcpSendFIFOWriteEnable       => ft232TxEnable,
+  --    tcpSendFIFOFull              => ft232TxFull,
+  --    -- TCP socket signals (tcp receive)
+  --    tcpReceiveFIFOEmpty          => ft232ReceiveFIFOEmpty,
+  --    tcpReceiveFIFOData           => ft232ReceiveFIFOReadData,
+  --    tcpReceiveFIFODataCount      => ft232ReceiveFIFODataCount,
+  --    tcpReceiveFIFOReadEnable     => ft232ReceiveFIFOReadEnable,
   --    -- RMAP Target signals (bus access)
-  --    busMasterCycleOut            => tcpRMAPBusMasterCycleOut,
-  --    busMasterStrobeOut           => tcpRMAPBusMasterStrobeOut,
-  --    busMasterAddressOut          => tcpRMAPBusMasterAddressOut,
-  --    busMasterByteEnableOut       => tcpRMAPBusMasterByteEnableOut,
-  --    busMasterDataIn              => tcpRMAPBusMasterDataIn,
-  --    busMasterDataOut             => tcpRMAPBusMasterDataOut,
-  --    busMasterWriteEnableOut      => tcpRMAPBusMasterWriteEnableOut,
-  --    busMasterReadEnableOut       => tcpRMAPBusMasterReadEnableOut,
-  --    busMasterAcknowledgeIn       => tcpRMAPBusMasterAcknowledgeIn,
-  --    busMasterTimeOutErrorIn      => tcpRMAPBusMasterTimeOutErrorIn,
+  --    busMasterCycleOut            => uartRMAPBusMasterCycleOut,
+  --    busMasterStrobeOut           => uartRMAPBusMasterStrobeOut,
+  --    busMasterAddressOut          => uartRMAPBusMasterAddressOut,
+  --    busMasterByteEnableOut       => uartRMAPBusMasterByteEnableOut,
+  --    busMasterDataIn              => uartRMAPBusMasterDataIn,
+  --    busMasterDataOut             => uartRMAPBusMasterDataOut,
+  --    busMasterWriteEnableOut      => uartRMAPBusMasterWriteEnableOut,
+  --    busMasterReadEnableOut       => uartRMAPBusMasterReadEnable,
+  --    busMasterAcknowledgeIn       => uartRMAPBusMasterAcknowledge,
+  --    busMasterTimeOutErrorIn      => uartRMAPBusMasterTimeOutErrorIn,
   --    -- RMAP Target signals (transaction control)
-  --    commandStateOut              => tcpRMAPCommandStateOut,
-  --    replyStateOut                => tcpRMAPReplyStateOut,
-  --    rmapLogicalAddressOut        => tcpRMAPLogicalAddressOut,
-  --    rmapCommandOut               => tcpRMAPCommandOut,
-  --    rmapKeyOut                   => tcpRMAPKeyOut,
-  --    rmapAddressOut               => tcpRMAPAddressOut,
-  --    rmapDataLengthOut            => tcpRMAPDataLengthOut,
-  --    requestAuthorization         => tcpRMAPRequestAuthorization,
-  --    authorizeIn                  => tcpRMAPAuthorizeIn,
-  --    rejectIn                     => tcpRMAPRejectIn,
-  --    replyStatusIn                => tcpRMAPReplyStatusIn,
-  --    rmapErrorCode                => tcpRMAPErrorCode,
+  --    commandStateOut              => uartRMAPCommandStateOut,
+  --    replyStateOut                => uartRMAPReplyStateOut,
+  --    rmapLogicalAddressOut        => uartRMAPLogicalAddressOut,
+  --    rmapCommandOut               => uartRMAPCommandOut,
+  --    rmapKeyOut                   => uartRMAPKeyOut,
+  --    rmapAddressOut               => uartRMAPAddressOut,
+  --    rmapDataLengthOut            => uartRMAPDataLengthOut,
+  --    requestAuthorization         => uartRMAPRequestAuthorization,
+  --    authorizeIn                  => uartRMAPAuthorizeIn,
+  --    rejectIn                     => uartRMAPRejectIn,
+  --    replyStatusIn                => uartRMAPReplyStatusIn,
+  --    rmapErrorCode                => uartRMAPErrorCode,
   --    stateOutSSDTP2TCPToSpaceWire => stateOutSSDTP2TCPToSpaceWire,
   --    stateOutSSDTP2SpaceWireToTCP => stateOutSSDTP2SpaceWireToTCP,
-  --    statisticalInformationClear  => tcpRMAPStatisticalInformationClear,
-  --    statisticalInformation       => tcpRMAPStatisticalInformation
+  --    statisticalInformationClear  => uartRMAPStatisticalInformationClear,
+  --    statisticalInformation       => uartRMAPStatisticalInformation
   --    );
-  --tcpRMAPAuthorizeIn   <= '1' when tcpRMAPRequestAuthorization = '1' else '0';
-  --tcpRMAPRejectIn      <= '0';
-  --tcpRMAPReplyStatusIn <= (others => '0');
+  --uartRMAPAuthorizeIn   <= '1' when uartRMAPRequestAuthorization = '1' else '0';
+  --uartRMAPRejectIn      <= '0';
+  --uartRMAPReplyStatusIn <= (others => '0');
 
   -----------------------------------------------
   ---- iBus Controller
@@ -1561,7 +1300,7 @@ begin
   -----------------------------------------------
   ---- iBus-RMAP bridge
   -----------------------------------------------  
-  --instanceOfiBus_RMAPConnector : iBus_RMAPConnector
+  --instanceOfiBus_RMAPConnector : entity work.iBus_RMAPConnector
   --  generic map(
   --    InitialAddress => x"FFF0",  -- not used because no iBus module can access to RMAPConnector (i.e. this module acts as target)
   --    FinalAddress   => x"FFFF"  -- not used because no iBus module can access to RMAPConnector (i.e. this module acts as target)
@@ -1569,21 +1308,64 @@ begin
   --  port map(
   --    BusIF2BusController         => BusIF2BusController(6),
   --    BusController2BusIF         => BusController2BusIF(6),
-  --    rmapBusMasterCycleOut       => tcpRMAPBusMasterCycleOut,
-  --    rmapBusMasterStrobeOut      => tcpRMAPBusMasterStrobeOut,
-  --    rmapBusMasterAddressOut     => tcpRMAPBusMasterAddressOut,
-  --    rmapBusMasterByteEnableOut  => tcpRMAPBusMasterByteEnableOut,
-  --    rmapBusMasterDataIn         => tcpRMAPBusMasterDataIn,
-  --    rmapBusMasterDataOut        => tcpRMAPBusMasterDataOut,
-  --    rmapBusMasterWriteEnableOut => tcpRMAPBusMasterWriteEnableOut,
-  --    rmapBusMasterReadEnableOut  => tcpRMAPBusMasterReadEnableOut,
-  --    rmapBusMasterAcknowledgeIn  => tcpRMAPBusMasterAcknowledgeIn,
-  --    rmapBusMasterTimeOutErrorIn => tcpRMAPBusMasterTimeOutErrorIn,
-  --    rmapProcessStateInteger     => tcpRMAPProcessStateInteger,
+  --    rmapBusMasterCycleOut       => uartRMAPBusMasterCycleOut,
+  --    rmapBusMasterStrobeOut      => uartRMAPBusMasterStrobeOut,
+  --    rmapBusMasterAddressOut     => uartRMAPBusMasterAddressOut,
+  --    rmapBusMasterByteEnableOut  => uartRMAPBusMasterByteEnableOut,
+  --    rmapBusMasterDataIn         => uartRMAPBusMasterDataIn_iBus,
+  --    rmapBusMasterDataOut        => uartRMAPBusMasterDataOut,
+  --    rmapBusMasterWriteEnableOut => uartRMAPBusMasterWriteEnableOut,
+  --    rmapBusMasterReadEnableOut  => uartRMAPBusMasterReadEnable_iBus,
+  --    rmapBusMasterAcknowledgeIn  => uartRMAPBusMasterAcknowledge_iBus,
+  --    rmapBusMasterTimeOutErrorIn => uartRMAPBusMasterTimeOutErrorIn,
+  --    rmapProcessStateInteger     => uartRMAPProcessStateInteger,
 
   --    Clock       => Clock100MHz,
-  --    GlobalReset => iConnectionEstablished(2)  --reset when tcp client is disconnected
+  --    GlobalReset => GlobalReset        --reset when tcp client is disconnected
   --    );
 
-  GlobalReset <= not Reset;
+  --GlobalReset <= not Reset;
+
+  ---- multiplexing RMAP Read access
+  ---- Address 0x0000_xxxx = iBus address space
+  ---- Address 0x1000_xxxx = EventFIFO read data
+  --RMAPAccessMode                        <= RMAPAccessMode_iBus               when uartRMAPBusMasterAddressOut(31 downto 16) = x"0000" else RMAPAccessMode_EventFIFO;
+  --uartRMAPBusMasterDataIn               <= uartRMAPBusMasterDataIn_iBus      when RMAPAccessMode = RMAPAccessMode_iBus                else uartRMAPBusMasterDataIn_EventFIFO;
+  --uartRMAPBusMasterReadEnable_iBus      <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_iBus                else '0';
+  --uartRMAPBusMasterReadEnable_EventFIFO <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_EventFIFO           else '0';
+  --uartRMAPBusMasterAcknowledge          <= uartRMAPBusMasterAcknowledge_iBus when RMAPAccessMode = RMAPAccessMode_iBus                else uartRMAPBusMasterAcknowledge_EventFIFO;
+
+  --process(Clock100MHz, reset)
+  --begin
+  --  if(reset = '1')then
+  --    EventFIFOReadState <= Initialization;
+  --  elsif(Clock100MHz = '1' and Clock100MHz'event)then
+  --    case EventFIFOReadState is
+  --      when Initialization =>
+  --        EventFIFOReadEnable <= '0';
+  --        EventFIFOReadState  <= Idle;
+  --      when Idle =>
+  --        if(uartRMAPBusMasterReadEnable_EventFIFO = '1')then
+  --          EventFIFOReadEnable <= '1';
+  --          EventFIFOReadState  <= Read1;
+  --        else
+  --          EventFIFOReadEnable <= '0';
+  --        end if;
+  --      when Read1 =>
+  --        EventFIFOReadEnable <= '0';
+  --        EventFIFOReadState  <= Ack;
+  --      when Ack =>
+  --        uartRMAPBusMasterDataIn_EventFIFO <= EventFIFOReadData;
+  --        if(uartRMAPBusMasterReadEnable_EventFIFO = '0')then
+  --          uartRMAPBusMasterAcknowledge_EventFIFO <= '0';
+  --          EventFIFOReadState                     <= Idle;
+  --        else                          -- still read enable '1'
+  --          uartRMAPBusMasterAcknowledge_EventFIFO <= '1';
+  --        end if;
+  --      when others =>
+  --        EventFIFOReadState <= Initialization;
+  --    end case;
+  --  end if;
+  --end process;
+
 end Behavioral;
