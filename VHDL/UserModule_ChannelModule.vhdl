@@ -232,6 +232,8 @@ architecture Behavioral of UserModule_ChannelModule is
   constant AddressOf_LivetimeRegisterH         : std_logic_vector(15 downto 0) := BA+x"0010";
   constant AddressOf_CurrentAdcDataRegister    : std_logic_vector(15 downto 0) := BA+x"0012";
   constant AddressOf_CPUTrigger                : std_logic_vector(15 downto 0) := BA+x"0014";
+  constant AddressOf_TriggerCountL                : std_logic_vector(15 downto 0) := BA+x"0016";
+  constant AddressOf_TriggerCountH                : std_logic_vector(15 downto 0) := BA+x"0018";
 
   -- constant AddressOf_DigitalFilterTrigger_ThresholdDeltaRegister                       : std_logic_vector(15 downto 0) := BA+x"0018";
   -- constant AddressOf_DigitalFilterTrigger_WidthRegister                                : std_logic_vector(15 downto 0) := BA+x"001a";
@@ -456,6 +458,10 @@ begin
               beReadData <= Status1Register;
             elsif (beReadAddress = AddressOf_Status2Register) then
               beReadData <= Status2Register;
+            elsif (beReadAddress = AddressOf_TriggerCountL) then
+              beReadData <= TriggerCount(15 downto 0);
+            elsif (beReadAddress = AddressOf_TriggerCountH) then
+              beReadData <= TriggerCount(31 downto 16);
             else
                                         --sonzai shina address heno yomikomi datta tokiha
                                         --0xabcd toiu tekitou na value wo kaeshite oku kotoni shitearu
