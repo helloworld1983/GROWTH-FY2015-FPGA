@@ -296,9 +296,16 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal EventFIFOReadData    : std_logic_vector(15 downto 0);
   signal EventFIFOReadEnable  : std_logic;
   signal EventFIFOEmpty       : std_logic;
+  signal EventFIFODataCount   : std_logic_vector(13 downto 0);
 
-  type   EventFIFOReadStates is (Initialization, Idle, Read1, Ack, Finalize);
-  signal EventFIFOReadState : EventFIFOReadStates := Initialization;
+  type     EventFIFOReadStates is (Initialization, Idle, Read1, Read2, Ack, Finalize);
+  signal   EventFIFOReadState                  : EventFIFOReadStates                          := Initialization;
+  signal   gpsYYMMDDHHMMSS_latched             : std_logic_vector(95 downto 0)                := (others => '0');  -- 96 bits = 12 bytes
+  signal   fpgaRealtime_latched                : std_logic_vector(WidthOfRealTime-1 downto 0) := (others => '0');  --48 bits = 6 bytes
+  signal   GPSTimeTableRegister                : std_logic_vector(143 downto 0)               := (others => '0');  -- (12 + 6 + 2)=20 bytes = 160 bits = 10 16-bit words
+  constant AddressOfEventFIFODataCountRegister : std_logic_vector(31 downto 0)                := x"20000000";
+  constant AddressOfGPSTimeRegister            : std_logic_vector(31 downto 0)                := x"20000002";
+  constant GPSRegisterLengthInBytes : integer := 20;
 
   ---------------------------------------------
   -- UART
@@ -679,13 +686,13 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
 
 
   --ssdtp debug
-  signal ssdtpDebugState : integer range 0 to 255 := 0;
-  signal rpiDumpState : integer range 0 to 255 := 0;
-  signal rpiDumpStateNext : integer range 0 to 255 := 0;
-  signal receiveFIFOReadEnableCount : std_logic_vector(7 downto 0) := (others => '0');
+  signal eventFIFODataSendState      : integer range 0 to 255       := 0;
+  signal rpiDumpState                : integer range 0 to 255       := 0;
+  signal rpiDumpStateNext            : integer range 0 to 255       := 0;
+  signal receiveFIFOReadEnableCount  : std_logic_vector(7 downto 0) := (others => '0');
   signal receiveFIFOWriteEnableCount : std_logic_vector(7 downto 0) := (others => '0');
-  signal sendFIFOReadEnableCount : std_logic_vector(7 downto 0) := (others => '0');
-  signal sendFIFOWriteEnableCount : std_logic_vector(7 downto 0) := (others => '0');
+  signal sendFIFOReadEnableCount     : std_logic_vector(7 downto 0) := (others => '0');
+  signal sendFIFOWriteEnableCount    : std_logic_vector(7 downto 0) := (others => '0');
 
 
 
@@ -963,107 +970,107 @@ begin
     if(reset = '1')then
       rpiTxData <= (others => '0');
     elsif(Clock100MHz = '1' and Clock100MHz'event)then
-      if(ft232ReceiveFIFOReadEnable='1')then
+      if(ft232ReceiveFIFOReadEnable = '1')then
         receiveFIFOReadEnableCount <= receiveFIFOReadEnableCount + 1;
       end if;
-      if(ft232ReceiveFIFOWriteEnable='1')then
+      if(ft232ReceiveFIFOWriteEnable = '1')then
         receiveFIFOWriteEnableCount <= receiveFIFOWriteEnableCount + 1;
       end if;
-      if(ft232SendFIFOReadEnable='1')then
+      if(ft232SendFIFOReadEnable = '1')then
         sendFIFOReadEnableCount <= sendFIFOReadEnableCount + 1;
       end if;
-      if(ft232SendFIFOWriteEnable='1')then
+      if(ft232SendFIFOWriteEnable = '1')then
         sendFIFOWriteEnableCount <= sendFIFOWriteEnableCount + 1;
       end if;
 
       case rpiDumpState is
         when 0 =>
           if(counter1sec = Count1sec)then
-            rpiTxData <= x"57"; -- W (meaning WriteEnableCount of uartReceiveFIFO)
-            rpiDumpState <= 100; -- send
+            rpiTxData        <= x"57";  -- W (meaning WriteEnableCount of uartReceiveFIFO)
+            rpiDumpState     <= 100;    -- send
             rpiDumpStateNext <= 1;
           end if;
         when 1 =>
-          rpiTxData <= receiveFIFOWriteEnableCount;
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= receiveFIFOWriteEnableCount;
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 2;
         when 2 =>
-          rpiTxData <= x"52"; -- R (meaning ReadEnableCount of uartReceiveFIFO)
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= x"52";  -- R (meaning ReadEnableCount of uartReceiveFIFO)
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 3;
         when 3 =>
-          rpiTxData <= receiveFIFOReadEnableCount;
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= receiveFIFOReadEnableCount;
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 4;
         when 4 =>
-          rpiTxData <= x"53"; -- S (meaning State of TCP2SpaceWire)
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= x"53";    -- S (meaning State of TCP2SpaceWire)
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 5;
         when 5 =>
-          rpiTxData <= stateOutSSDTP2TCPToSpaceWire;
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= stateOutSSDTP2TCPToSpaceWire;
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 6;
         when 6 =>
-          rpiTxData <= stateOutSSDTP2SpaceWireToTCP;
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= stateOutSSDTP2SpaceWireToTCP;
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 7;
         when 7 =>
-          rpiTxData <= x"77"; -- w (meaning WriteEnableCount of uartSendFIFO)
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= x"77";  -- w (meaning WriteEnableCount of uartSendFIFO)
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 8;
         when 8 =>
-          rpiTxData <= sendFIFOWriteEnableCount;
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= sendFIFOWriteEnableCount;
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 9;
         when 9 =>
-          rpiTxData <= x"72"; -- r (meaning ReadEnableCount of uartSendFIFO)
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= x"72";  -- r (meaning ReadEnableCount of uartSendFIFO)
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 10;
         when 10 =>
-          rpiTxData <= sendFIFOReadEnableCount;
-          rpiDumpState <= 100; -- send
+          rpiTxData        <= sendFIFOReadEnableCount;
+          rpiDumpState     <= 100;      -- send
           rpiDumpStateNext <= 0;
         when 100 =>
-          if(rpiTxReady='0')then
-            rpiTxEnable <= '0';
+          if(rpiTxReady = '0')then
+            rpiTxEnable  <= '0';
             rpiDumpState <= 101;
           else
             rpiTxEnable <= '1';
           end if;
         when 101 =>
-          if(rpiTxReady='1')then
+          if(rpiTxReady = '1')then
             rpiDumpState <= rpiDumpStateNext;
           end if;
         when others =>
-          rpiDumpState <=0;
+          rpiDumpState <= 0;
       end case;
 
-      case ssdtpDebugState is
+      case eventFIFODataSendState is
         when 0 =>
-          if(ft232SendFIFOEmpty = '0' and ft232TxReady = '1')then  -- if not empty and Tx is ready
+          if(ft232SendFIFOEmpty = '0' and ft232TxReady = '1' and FT232_nRTS_FPGA_nCTS = UART_CAN_RECEIVE)then  -- if not empty and Tx is ready
             ft232SendFIFOReadEnable <= '1';
-            ssdtpDebugState         <= 1;
+            eventFIFODataSendState  <= 1;
           else
             ft232SendFIFOReadEnable <= '0';
           end if;
         when 1 =>
           ft232SendFIFOReadEnable <= '0';
-          ssdtpDebugState         <= 2;
+          eventFIFODataSendState  <= 2;
         when 2 =>
           ft232TxData <= ft232SendFIFODataOut;
           if(ft232TxReady = '0')then
-            ft232TxEnable   <= '0';
-            ssdtpDebugState <= 3;
+            ft232TxEnable          <= '0';
+            eventFIFODataSendState <= 3;
           else
             ft232TxEnable <= '1';
           end if;
         when 3 =>
           ft232TxEnable <= '0';
           if(ft232TxReady = '1')then
-            ssdtpDebugState <= 0;
+            eventFIFODataSendState <= 0;
           end if;
         when others =>
-          ssdtpDebugState <= 0;
+          eventFIFODataSendState <= 0;
       end case;
     end if;
   end process;
@@ -1071,23 +1078,23 @@ begin
   -----------------------------------------------
   ---- UART (GPS)
   -----------------------------------------------
-  --instanceOfGPSUARTInterface : entity work.GPSUARTInterface
-  --  generic map(
-  --    InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
-  --    BaudRate                  => BaudRate_GPS
-  --    )
-  --  port map(
-  --    clock                        => Clock100MHz,
-  --    reset                        => reset,
-  --    --from GPS
-  --    gpsUARTIn                    => GPS_TX_FPGA_RX,
-  --    gps1PPS                      => GPS_1PPS,
-  --    --processed signals
-  --    gpsDDMMYY                    => gpsDDMMYY,
-  --    gpsHHMMSS_SSS                => gpsHHMMSS_SSS,
-  --    gpsDateTimeUpdatedSingleShot => gpsDateTimeUpdatedSingleShot,
-  --    gps1PPSSingleShot            => gps1PPSSingleShot
-  --    );
+  instanceOfGPSUARTInterface : entity work.GPSUARTInterface
+    generic map(
+      InputClockPeriodInNanoSec => ClockPeriodInNanoSec_for_UART,  --ns
+      BaudRate                  => BaudRate_GPS
+      )
+    port map(
+      clock                        => Clock100MHz,
+      reset                        => reset,
+      --from GPS
+      gpsUARTIn                    => GPS_TX_FPGA_RX,
+      gps1PPS                      => GPS_1PPS,
+      --processed signals
+      gpsDDMMYY                    => gpsDDMMYY,
+      gpsHHMMSS_SSS                => gpsHHMMSS_SSS,
+      gpsDateTimeUpdatedSingleShot => gpsDateTimeUpdatedSingleShot,
+      gps1PPSSingleShot            => gps1PPSSingleShot
+      );
 
   ---------------------------------------------
   -- UART (Raspberry Pi)
@@ -1197,7 +1204,7 @@ begin
   ---------------------------------------------
   instanceOfConsumerManager : entity work.UserModule_ConsumerManager_EventFIFO
     generic map(
-      bufferDataCountWidth => EventFIFOWriteData'length,
+      bufferDataCountWidth => EventFIFODataCount'length,
       InitialAddress       => InitialAddressOf_ConsumerMgr,
       FinalAddress         => FinalAddressOf_ConsumerMgr
       )
@@ -1317,46 +1324,95 @@ begin
   -- multiplexing RMAP Read access
   -- Address 0x0000_xxxx = iBus address space
   -- Address 0x1000_xxxx = EventFIFO read data
-  RMAPAccessMode                        <= RMAPAccessMode_iBus               when uartRMAPBusMasterAddressOut(31 downto 16) = x"0000" else RMAPAccessMode_EventFIFO;
-  uartRMAPBusMasterDataIn               <= uartRMAPBusMasterDataIn_iBus      when RMAPAccessMode = RMAPAccessMode_iBus                else uartRMAPBusMasterDataIn_EventFIFO;
-  uartRMAPBusMasterReadEnable_iBus      <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_iBus                else '0';
-  uartRMAPBusMasterReadEnable_EventFIFO <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_EventFIFO           else '0';
-  uartRMAPBusMasterAcknowledge          <= uartRMAPBusMasterAcknowledge_iBus when RMAPAccessMode = RMAPAccessMode_iBus                else uartRMAPBusMasterAcknowledge_EventFIFO;
+  -- Address 0x2000_0000 = EventFIFO data size register
+  RMAPAccessMode                        <= RMAPAccessMode_iBus               when uartRMAPBusMasterAddressOut(31 downto 16) = x"0000" or uartRMAPBusMasterAddressOut(31 downto 16) = x"0101" else RMAPAccessMode_EventFIFO;
+  uartRMAPBusMasterDataIn               <= uartRMAPBusMasterDataIn_iBus      when RMAPAccessMode = RMAPAccessMode_iBus                                                                       else uartRMAPBusMasterDataIn_EventFIFO;
+  uartRMAPBusMasterReadEnable_iBus      <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_iBus                                                                       else '0';
+  uartRMAPBusMasterReadEnable_EventFIFO <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_EventFIFO                                                                  else '0';
+  uartRMAPBusMasterAcknowledge          <= uartRMAPBusMasterAcknowledge_iBus when RMAPAccessMode = RMAPAccessMode_iBus                                                                       else uartRMAPBusMasterAcknowledge_EventFIFO;
 
-  EventFIFO : entity work.fifo16x2k
+  EventFIFO : entity work.EventFIFO
     port map(
-      rst    => Reset,
-      wr_clk => Clock100MHz,
-      rd_clk => Clock100MHz,
-      din    => EventFIFOWriteData,
-      wr_en  => EventFIFOWriteEnable,
-      rd_en  => EventFIFOReadEnable,
-      dout   => EventFIFOReadData,
-      full   => EventFIFOFull,
-      empty  => EventFIFOEmpty
+      rst        => Reset,
+      clk        => Clock100MHz,
+      din        => EventFIFOWriteData,
+      wr_en      => EventFIFOWriteEnable,
+      rd_en      => EventFIFOReadEnable,
+      dout       => EventFIFOReadData,
+      full       => EventFIFOFull,
+      empty      => EventFIFOEmpty,
+      data_count => EventFIFODataCount
       );
 
+  -- RMAP registers
   process(Clock100MHz, reset)
   begin
     if(reset = '1')then
       EventFIFOReadState <= Initialization;
     elsif(Clock100MHz = '1' and Clock100MHz'event)then
+      if(gps1PPSSingleShot = '1' or gpsDateTimeUpdatedSingleShot='1')then
+        gpsYYMMDDHHMMSS_latched <=
+          gpsDDMMYY(15 downto 0) & gpsDDMMYY(31 downto 16) & gpsDDMMYY(47 downto 32)
+          & gpsHHMMSS_SSS(71 downto 24);
+        fpgaRealtime_latched <= ChMgr2ChModule(0).Realtime;
+      end if;
+
+      -- EventFIFO readout process
       case EventFIFOReadState is
         when Initialization =>
           EventFIFOReadEnable <= '0';
           EventFIFOReadState  <= Idle;
         when Idle =>
           if(uartRMAPBusMasterReadEnable_EventFIFO = '1')then
-            EventFIFOReadEnable <= '1';
-            EventFIFOReadState  <= Read1;
+            if(uartRMAPBusMasterAddressOut = AddressOfEventFIFODataCountRegister)then  -- EventFIFO DataCount register
+              uartRMAPBusMasterDataIn_EventFIFO(15)          <= '0';
+              uartRMAPBusMasterDataIn_EventFIFO(14)          <= EventFIFOFull;
+              uartRMAPBusMasterDataIn_EventFIFO(13 downto 0) <= EventFIFODataCount;
+              EventFIFOReadState                             <= Ack;
+            elsif(
+              AddressOfGPSTimeRegister        <= uartRMAPBusMasterAddressOut
+              and uartRMAPBusMasterAddressOut <= AddressOfGPSTimeRegister+GPSRegisterLengthInBytes
+              )then                     -- GPS register first word
+              case conv_integer(uartRMAPBusMasterAddressOut(15 downto 0)-AddressOfGPSTimeRegister(15 downto 0)) is
+                when 0 =>               -- latch register
+                  uartRMAPBusMasterDataIn_EventFIFO <= x"3050"; -- 00 in ASCII
+                  GPSTimeTableRegister              <= gpsYYMMDDHHMMSS_latched & fpgaRealtime_latched;
+                when 18 =>               -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(15 downto 0);
+                when 16 =>               -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(31 downto 16);
+                when 14 =>               -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(47 downto 32);
+                when 12 =>               -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(63 downto 48);
+                when 10 =>              -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(79 downto 64);
+                when 8 =>              -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(95 downto 80);
+                when 6 =>              -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(111 downto 96);
+                when 4 =>              -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(127 downto 112);
+                when 2 =>              -- 
+                  uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(143 downto 128);
+                when others =>
+                  uartRMAPBusMasterDataIn_EventFIFO <= x"FFFF";
+              end case;
+              EventFIFOReadState <= Ack;
+            else                        -- read EventFIFO
+              EventFIFOReadEnable <= '1';
+              EventFIFOReadState  <= Read1;
+            end if;
           else
             EventFIFOReadEnable <= '0';
           end if;
         when Read1 =>
           EventFIFOReadEnable <= '0';
-          EventFIFOReadState  <= Ack;
-        when Ack =>
+          EventFIFOReadState  <= Read2;
+        when Read2 =>
           uartRMAPBusMasterDataIn_EventFIFO <= EventFIFOReadData;
+          EventFIFOReadState                <= Ack;
+        when Ack =>
           if(uartRMAPBusMasterReadEnable_EventFIFO = '0')then
             uartRMAPBusMasterAcknowledge_EventFIFO <= '0';
             EventFIFOReadState                     <= Idle;
