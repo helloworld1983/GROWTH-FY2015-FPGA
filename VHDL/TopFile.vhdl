@@ -683,6 +683,7 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   constant FT232_OUTPUT_MODE_GPS  : integer              := 2;
 
   signal FPGA_GPIO0 : std_logic;
+  signal debug_gpsRMAPAccess: std_logic := '0';
 
 
   --ssdtp debug
@@ -754,12 +755,13 @@ begin
       blinkOut  => iLED(2)
       );
 
-  iLED(7 downto 3) <= stateOutSSDTP2TCPToSpaceWire(4 downto 0);
+  --iLED(7 downto 3) <= stateOutSSDTP2TCPToSpaceWire(4 downto 0);
 
   led_op <= iLED;
+  
   --iLED(7) <= led1sec;
-  -- iLED(6) <= uartLED;
-  -- iLED(5) <= gpsLED;
+  iLED(6) <= '0';
+  iLED(5) <= gpsLED;
   --  iLED(7 downto 0) <= conv_std_logic_vector(uartState, 8);
 
 
@@ -829,7 +831,7 @@ begin
   -- When UART receive buffer has room, assert
   -- FT232_nCTS_FPGA_nRTS <= UART_CAN_RECEIVE; --'0'
 
-  TRIG_OUT <= (0 => ChModule2ChMgr(0).Trigger, 1 => ChModule2ChMgr(1).Trigger, 2 => ChModule2ChMgr(2).Trigger, 3 => ChModule2ChMgr(3).Trigger);
+  TRIG_OUT <= (0 => GPS_1PPS, 1 => debug_gpsRMAPAccess, 2 => ChModule2ChMgr(2).Trigger, 3 => ChModule2ChMgr(3).Trigger);
 
   ---------------------------------------------
   -- Process
@@ -1371,7 +1373,7 @@ begin
               EventFIFOReadState                             <= Ack;
             elsif(
               AddressOfGPSTimeRegister        <= uartRMAPBusMasterAddressOut
-              and uartRMAPBusMasterAddressOut <= AddressOfGPSTimeRegister+GPSRegisterLengthInBytes
+              and uartRMAPBusMasterAddressOut <= AddressOfGPSTimeRegister+conv_std_logic_vector(GPSRegisterLengthInBytes,31)
               )then                     -- GPS register first word
               case conv_integer(uartRMAPBusMasterAddressOut(15 downto 0)-AddressOfGPSTimeRegister(15 downto 0)) is
                 when 0 =>               -- latch register
