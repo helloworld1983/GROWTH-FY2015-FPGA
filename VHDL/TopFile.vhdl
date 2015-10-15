@@ -663,7 +663,7 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   ---------------------------------------------
   -- ADC
   ---------------------------------------------
-  constant CountADCClock   : integer                          := 5;
+  constant CountADCClock   : integer                          := 1;
   signal   counterADCClock : integer range 0 to CountADCClock := 0;
 
   ---------------------------------------------

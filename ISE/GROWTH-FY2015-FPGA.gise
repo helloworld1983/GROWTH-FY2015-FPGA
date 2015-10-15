@@ -42,6 +42,7 @@
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_BITGEN_REPORT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA.ut" xil_pn:subbranch="FPGAConfiguration"/>
     <file xil_pn:fileType="FILE_XPI" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA.xpi"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_XST" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA.xst"/>
+    <file xil_pn:fileType="FILE_HTML" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_envsettings.html"/>
     <file xil_pn:fileType="FILE_NCD" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_guide.ncd" xil_pn:origination="imported"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_MAP_REPORT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_map.map" xil_pn:subbranch="Map"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_MAP_REPORT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_map.mrp" xil_pn:subbranch="Map"/>
@@ -52,6 +53,7 @@
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_PAD_EXCEL_REPORT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_pad.csv" xil_pn:subbranch="Par"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_PAD_TXT_REPORT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_pad.txt" xil_pn:subbranch="Par"/>
     <file xil_pn:fileType="FILE_XRPT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_par.xrpt"/>
+    <file xil_pn:fileType="FILE_HTML" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_summary.html"/>
     <file xil_pn:fileType="FILE_FITTER_REPORT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_summary.xml"/>
     <file xil_pn:fileType="FILE_WEBTALK" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_usage.xml"/>
     <file xil_pn:fileType="FILE_XRPT" xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_xst.xrpt"/>
@@ -62,6 +64,15 @@
     <file xil_pn:fileType="FILE_XMSGS" xil_pn:name="_xmsgs/par.xmsgs"/>
     <file xil_pn:fileType="FILE_XMSGS" xil_pn:name="_xmsgs/trce.xmsgs"/>
     <file xil_pn:fileType="FILE_XMSGS" xil_pn:name="_xmsgs/xst.xmsgs"/>
+    <file xil_pn:fileType="FILE_ASY" xil_pn:name="ipcore_dir/RMAP/FIFO8x2kXilinx.asy" xil_pn:origination="imported"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_NGC" xil_pn:name="ipcore_dir/RMAP/FIFO8x2kXilinx.ngc" xil_pn:origination="imported"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_VHDL" xil_pn:name="ipcore_dir/RMAP/FIFO8x2kXilinx.vhd" xil_pn:origination="imported"/>
+    <file xil_pn:fileType="FILE_VHO" xil_pn:name="ipcore_dir/RMAP/FIFO8x2kXilinx.vho" xil_pn:origination="imported"/>
+    <file xil_pn:fileType="FILE_ASY" xil_pn:name="ipcore_dir/RMAP/crcRomXilinx.asy" xil_pn:origination="imported"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_NGC" xil_pn:name="ipcore_dir/RMAP/crcRomXilinx.ngc" xil_pn:origination="imported"/>
+    <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_VHDL" xil_pn:name="ipcore_dir/RMAP/crcRomXilinx.vhd" xil_pn:origination="imported"/>
+    <file xil_pn:fileType="FILE_VHO" xil_pn:name="ipcore_dir/RMAP/crcRomXilinx.vho" xil_pn:origination="imported"/>
+    <file xil_pn:fileType="FILE_LOG" xil_pn:name="ipcore_dir/coregen.log"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_BITGEN_REPORT" xil_pn:name="tokuden_growth_fy2015_fpga.bgn" xil_pn:subbranch="FPGAConfiguration"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_BIT" xil_pn:name="tokuden_growth_fy2015_fpga.bit" xil_pn:subbranch="FPGAConfiguration"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_BITGEN_DRC" xil_pn:name="tokuden_growth_fy2015_fpga.drc" xil_pn:subbranch="FPGAConfiguration"/>
@@ -72,15 +83,37 @@
   </files>
 
   <transforms xmlns="http://www.xilinx.com/XMLSchema">
+    <transform xil_pn:end_ts="1433758069" xil_pn:name="TRAN_copyInitialToXSTAbstractSynthesis" xil_pn:start_ts="1433758069">
+      <status xil_pn:value="SuccessfullyRun"/>
+      <status xil_pn:value="ReadyToRun"/>
+    </transform>
     <transform xil_pn:end_ts="1433385104" xil_pn:name="TRAN_schematicsToHdl" xil_pn:prop_ck="-2856305926206919112" xil_pn:start_ts="1433385104">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1433385105" xil_pn:in_ck="4147289789895159538" xil_pn:name="TRAN_regenerateCores" xil_pn:prop_ck="-4225296872194710871" xil_pn:start_ts="1433385104">
+    <transform xil_pn:end_ts="1434024637" xil_pn:in_ck="1413177017663653473" xil_pn:name="TRAN_regenerateCores" xil_pn:prop_ck="-4225296872194710871" xil_pn:start_ts="1434024621">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
+      <outfile xil_pn:name="ipcore_dir/EventFIFO.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/EventFIFO.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/RMAP/FIFO8x2kXilinx.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/RMAP/FIFO8x2kXilinx.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/RMAP/crcRomXilinx.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/RMAP/crcRomXilinx.vhd"/>
       <outfile xil_pn:name="ipcore_dir/WaveformFIFO.ngc"/>
       <outfile xil_pn:name="ipcore_dir/WaveformFIFO.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/fifo16x2k.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/fifo16x2k.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/fifo16x8k.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/fifo16x8k.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/fifo8x1k.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/fifo8x1k.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/fifo9x1k.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/fifo9x1k.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/ram16x1024.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/ram16x1024.vhd"/>
+      <outfile xil_pn:name="ipcore_dir/usermodule_fifo_core.ngc"/>
+      <outfile xil_pn:name="ipcore_dir/usermodule_fifo_core.vhd"/>
     </transform>
     <transform xil_pn:end_ts="1433325466" xil_pn:in_ck="7733354550573410209" xil_pn:name="TRAN_SubProjectAbstractToPreProxy" xil_pn:start_ts="1433325466">
       <status xil_pn:value="SuccessfullyRun"/>
@@ -98,7 +131,7 @@
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1433399348" xil_pn:in_ck="-401713752385183382" xil_pn:name="TRANEXT_xstsynthesize_spartan6" xil_pn:prop_ck="7544479249371562498" xil_pn:start_ts="1433399317">
+    <transform xil_pn:end_ts="1444888513" xil_pn:in_ck="8529838481183561386" xil_pn:name="TRANEXT_xstsynthesize_spartan6" xil_pn:prop_ck="7544479249371562498" xil_pn:start_ts="1444888409">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
       <status xil_pn:value="ReadyToRun"/>
@@ -120,7 +153,7 @@
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1433399355" xil_pn:in_ck="-1522846951654103673" xil_pn:name="TRANEXT_ngdbuild_FPGA" xil_pn:prop_ck="2878796805629441364" xil_pn:start_ts="1433399348">
+    <transform xil_pn:end_ts="1444888531" xil_pn:in_ck="-595245778794254444" xil_pn:name="TRANEXT_ngdbuild_FPGA" xil_pn:prop_ck="2878796805629441364" xil_pn:start_ts="1444888513">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
       <status xil_pn:value="ReadyToRun"/>
@@ -130,7 +163,7 @@
       <outfile xil_pn:name="_ngo"/>
       <outfile xil_pn:name="_xmsgs/ngdbuild.xmsgs"/>
     </transform>
-    <transform xil_pn:end_ts="1433399388" xil_pn:in_ck="-1151224491037391942" xil_pn:name="TRANEXT_map_spartan6" xil_pn:prop_ck="4245753365082497697" xil_pn:start_ts="1433399355">
+    <transform xil_pn:end_ts="1444888703" xil_pn:in_ck="-1151224491037391942" xil_pn:name="TRANEXT_map_spartan6" xil_pn:prop_ck="4245753365082497697" xil_pn:start_ts="1444888531">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
       <status xil_pn:value="ReadyToRun"/>
@@ -144,7 +177,7 @@
       <outfile xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_usage.xml"/>
       <outfile xil_pn:name="_xmsgs/map.xmsgs"/>
     </transform>
-    <transform xil_pn:end_ts="1433399420" xil_pn:in_ck="676005849528836051" xil_pn:name="TRANEXT_par_spartan6" xil_pn:prop_ck="-3829590541433901613" xil_pn:start_ts="1433399388">
+    <transform xil_pn:end_ts="1444888801" xil_pn:in_ck="676005849528836051" xil_pn:name="TRANEXT_par_spartan6" xil_pn:prop_ck="-3829590541433901613" xil_pn:start_ts="1444888703">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
       <status xil_pn:value="ReadyToRun"/>
@@ -159,7 +192,7 @@
       <outfile xil_pn:name="Tokuden_GROWTH_FY2015_FPGA_par.xrpt"/>
       <outfile xil_pn:name="_xmsgs/par.xmsgs"/>
     </transform>
-    <transform xil_pn:end_ts="1433399436" xil_pn:in_ck="-1794590903251635270" xil_pn:name="TRANEXT_bitFile_spartan6" xil_pn:prop_ck="-2333564845769669993" xil_pn:start_ts="1433399420">
+    <transform xil_pn:end_ts="1444888836" xil_pn:in_ck="-1794590903251635270" xil_pn:name="TRANEXT_bitFile_spartan6" xil_pn:prop_ck="-2333564845769669993" xil_pn:start_ts="1444888801">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
       <status xil_pn:value="ReadyToRun"/>
@@ -171,7 +204,7 @@
       <outfile xil_pn:name="webtalk.log"/>
       <outfile xil_pn:name="webtalk_pn.xml"/>
     </transform>
-    <transform xil_pn:end_ts="1433399420" xil_pn:in_ck="-1151224491037392074" xil_pn:name="TRAN_postRouteTrce" xil_pn:prop_ck="445577401284416185" xil_pn:start_ts="1433399411">
+    <transform xil_pn:end_ts="1444888801" xil_pn:in_ck="-1151224491037392074" xil_pn:name="TRAN_postRouteTrce" xil_pn:prop_ck="445577401284416185" xil_pn:start_ts="1444888784">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
       <outfile xil_pn:name="Tokuden_GROWTH_FY2015_FPGA.twr"/>
