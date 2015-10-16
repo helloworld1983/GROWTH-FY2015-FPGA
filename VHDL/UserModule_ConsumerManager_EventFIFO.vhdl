@@ -40,6 +40,7 @@ entity UserModule_ConsumerManager_EventFIFO is
     EventFIFOWriteData             : out std_logic_vector(15 downto 0);
     EventFIFOWriteEnable      : out std_logic;
     EventFIFOFull             : in  std_logic;
+    EventFIFOReset      : out std_logic;
     --clock and reset
     Clock                       : in  std_logic;
     GlobalReset                 : in  std_logic
@@ -171,6 +172,8 @@ begin
     ConsumerMgr2Consumer_vector(I).EventPacket_NumberOfWaveform <= EventPacket_NumberOfWaveform_Register;
     ConsumerMgr2Consumer_vector(I).NumberOf_BaselineSample      <= NumberOf_BaselineSample_Register;
   end generate;
+
+  EventFIFOReset <= ResetRegister(0);
 
   ---------------------------------------------------
   --Dynamic Processes with Sensitivity List

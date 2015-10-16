@@ -297,6 +297,8 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal EventFIFOReadEnable  : std_logic;
   signal EventFIFOEmpty       : std_logic;
   signal EventFIFODataCount   : std_logic_vector(13 downto 0);
+  signal EventFIFOReset       : std_logic := '0';
+  signal EventFIFOReset_from_ConsumerMgr       : std_logic := '0';
 
   type     EventFIFOReadStates is (Initialization, Idle, Read1, Read2, Ack, Finalize);
   signal   EventFIFOReadState                  : EventFIFOReadStates                          := Initialization;
@@ -1221,6 +1223,7 @@ begin
       EventFIFOWriteData          => EventFIFOWriteData,
       EventFIFOWriteEnable        => EventFIFOWriteEnable,
       EventFIFOFull               => EventFIFOFull,
+      EventFIFOReset              => EventFIFOReset_from_ConsumerMgr,
       --clock and reset
       Clock                       => Clock100MHz,
       GlobalReset                 => GlobalReset
@@ -1335,7 +1338,7 @@ begin
 
   EventFIFO : entity work.EventFIFO
     port map(
-      rst        => Reset,
+      rst        => EventFIFOReset,
       clk        => Clock100MHz,
       din        => EventFIFOWriteData,
       wr_en      => EventFIFOWriteEnable,
@@ -1352,6 +1355,8 @@ begin
     if(reset = '1')then
       EventFIFOReadState <= Initialization;
     elsif(Clock100MHz = '1' and Clock100MHz'event)then
+      EventFIFOReset <= EventFIFOReset_from_ConsumerMgr or Reset;
+
       if(gps1PPSSingleShot = '1' or gpsDateTimeUpdatedSingleShot='1')then
         gpsYYMMDDHHMMSS_latched <=
           gpsDDMMYY(15 downto 0) & gpsDDMMYY(31 downto 16) & gpsDDMMYY(47 downto 32)
