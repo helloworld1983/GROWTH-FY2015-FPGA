@@ -14,6 +14,8 @@
 --changed not to use EventManager. directly connected to event buffer in the ChannelModule
 --20141102 Takayuki Yuasa
 --changed data format; trigger count included and risetime removed
+--20151016 Takayuki Yuasa
+--changed data format; phaMin, phaFirst, phaLast, phaMaxTime, and maxDerivative added
 
 ---------------------------------------------------
 --Declarations of Libraries
@@ -81,9 +83,15 @@ architecture Behavioral of UserModule_ChModule_PulseProcessor is
   signal LoopO          : integer range 0 to 1024       := 0;
   signal LoopP          : integer range 0 to 3          := 0;
 
+  signal PhaPrevious    : std_logic_vector(15 downto 0) := (others => '0');
   signal PhaMax         : std_logic_vector(15 downto 0) := (others => '0');
   signal PhaMax_Address : std_logic_vector(9 downto 0)  := (others => '0');
+  signal PhaMin         : std_logic_vector(15 downto 0) := (others => '0');
+  signal PhaFirst         : std_logic_vector(15 downto 0) := (others => '0');
+  signal PhaLast         : std_logic_vector(15 downto 0) := (others => '0');
+  signal MaxDerivative         : std_logic_vector(15 downto 0) := (others => '0');
   signal Baseline       : std_logic_vector(31 downto 0) := (others => '0');
+  signal TriggerCount : std_logic_vector(31 downto 0) := (others => '0');
 
   --Registers
 
@@ -100,13 +108,11 @@ architecture Behavioral of UserModule_ChModule_PulseProcessor is
      AnalysisDone,
      --Sent Result
      WaitMgrGrant,
-     Send_0, Send_1, Send_1_5, Send_2, Send_3, Send_4, Send_5, Send_6, Send_7, Send_8, Send_9, Send_10, Send_11, Send_12,
-     WriteSeparator_0, WriteSeparator_1,
+     Send_1, Send_2, Send_3, Send_4, Send_5, Send_6, Send_7, Send_8, Send_9, Send_10, Send_11, Send_12, Send_13, Send_14,
+     WriteSeparator_0,
      --Finalize
      Finalize);
   signal UserModule_state : UserModule_StateMachine_State := Initialize;
-
-  signal TriggerCount : std_logic_vector(31 downto 0) := (others => '0');
 
   constant ConsumerNumber : integer := 0;
 
@@ -151,6 +157,10 @@ begin
           RamWriteEnable                   <= '0';
           PhaMax                           <= (others => '0');
           PhaMax_Address                   <= (others => '0');
+          PhaMin                           <= (others => '1');
+          PhaFirst                           <= (others => '0');
+          PhaLast                           <= (others => '0');
+          MaxDerivative                           <= (others => '0');
           FlagI                            <= '0';
           UserModule_state                 <= Idle;
         when Idle =>
@@ -244,31 +254,68 @@ begin
           CurrentCh        <= RamDataOut(14 downto 12);
           UserModule_state <= DeleteChFlag_2;
         when DeleteChFlag_2 =>
+          --write back to RAM
           RamDataIn        <= x"0" & Temp(11 downto 0);
           RamWriteEnable   <= '1';
+          --update pha_first
+          PhaFirst <= x"0" & Temp(11 downto 0);
           UserModule_state <= DeleteChFlag_3;
         when DeleteChFlag_3 =>
           RamWriteEnable   <= '0';
           RamAddress       <= (others => '0');
           UserModule_state <= SearchPhaMax;
-          --pha_max
+          --loop to search pha_max and pha_min
         when SearchPhaMax =>
+          --initialize pha_max and pha_min
           PhaMax           <= (others => '0');
+          PhaMin           <= (others => '1');
+          PhaPrevious      <= (others => '0');
+          MaxDerivative      <= (others => '0');
           LoopO            <= 0;
           RamAddress       <= RamAddress + 1;
           UserModule_state <= SearchPhaMax_2;
         when SearchPhaMax_2 =>
+          --search pha_max
           if (PhaMax < RamDataOut) then
             PhaMax         <= RamDataOut;
             PhaMax_Address <= RamAddress;
           end if;
-          if (LoopO = DataCount-1) then
+          --search pha_min
+          if (RamDataOut < PhaMin) then
+            PhaMin         <= RamDataOut;
+          end if;
+          --search maxDerivative
+          if(LoopO/=0)then --only when 1<=LoopO
+            if(RamDataOut<PhaPrevious)then
+              if( --
+                MaxDerivative < --
+                (PhaPrevious-RamDataOut) --derivative
+                )then
+                --update MaxDerivative
+                MaxDerivative <= PhaPrevious-RamDataOut;
+              end if;
+            else
+              if( --
+                MaxDerivative < --
+                (RamDataOut-PhaPrevious) --derivative
+                )then
+                --update MaxDerivative
+                MaxDerivative <= RamDataOut-PhaPrevious;
+              end if;
+            end if;
+          end if;
+          --update PhaPrevious
+          PhaPrevious <= RamDataOut;
+          --loop
+          if (LoopO = DataCount-1) then -- last pha
             UserModule_state <= Baseline_1;
+            --update pha_last
+            PhaLast <= RamDataOut;
           else
             LoopO      <= LoopO + 1;
             RamAddress <= RamAddress + 1;
           end if;
-          --baseline
+          --calc baseline
         when Baseline_1 =>
           RamAddress       <= (others => '0');
           LoopO            <= 0;
@@ -294,58 +341,60 @@ begin
           UserModule_state                <= WaitMgrGrant;
           --------------------------------------------
           --Send to ConsumerMgr
+          --Event packet format version 20151016
           --------------------------------------------
         when WaitMgrGrant =>
           if (ConsumerMgr2Consumer.Grant = '1') then
-            UserModule_state <= Send_0;
+            UserModule_state <= Send_1;
           end if;
-        when Send_0 =>
-          Consumer2ConsumerMgr.Data <= x"fff0";
-          UserModule_state          <= Send_1;
         when Send_1 =>
           Consumer2ConsumerMgr.WriteEnable <= '1';
-          Consumer2ConsumerMgr.Data        <= x"fff0";
-          UserModule_state                 <= Send_1_5;
-        when Send_1_5 =>
-          Consumer2ConsumerMgr.Data(15 downto 3) <= (others => '0');
-          Consumer2ConsumerMgr.Data(2 downto 0)  <= CurrentCh;
-          UserModule_state                       <= Send_2;
+          Consumer2ConsumerMgr.Data        <= x"FFF0";
+          UserModule_state                 <= Send_2;
         when Send_2 =>
-          Consumer2ConsumerMgr.Data <= conv_std_logic_vector(ConsumerNumber, 16);
-          UserModule_state          <= Send_3;
+          Consumer2ConsumerMgr.Data(15 downto 11) <= (others => '0');
+          Consumer2ConsumerMgr.Data(10 downto 8)  <= CurrentCh;
+          Consumer2ConsumerMgr.Data(7 downto 0)  <= Realtime(39 downto 32);
+          UserModule_state                       <= Send_3;
         when Send_3 =>
-          Consumer2ConsumerMgr.Data <= PhaMax;
+          Consumer2ConsumerMgr.Data <= Realtime(31 downto 16);
           UserModule_state          <= Send_4;
         when Send_4 =>
-          Consumer2ConsumerMgr.Data <= Realtime(47 downto 32);
+          Consumer2ConsumerMgr.Data <= Realtime(15 downto 0);
           UserModule_state          <= Send_5;
         when Send_5 =>
-          Consumer2ConsumerMgr.Data <= Realtime(31 downto 16);
+          Consumer2ConsumerMgr.Data <= x"CAFE"; --reserved
           UserModule_state          <= Send_6;
         when Send_6 =>
-          Consumer2ConsumerMgr.Data <= Realtime(15 downto 0);
+          Consumer2ConsumerMgr.Data <= TriggerCount(31 downto 16);
           UserModule_state          <= Send_7;
         when Send_7 =>
-          Consumer2ConsumerMgr.Data <= TriggerCount(31 downto 16);
+          Consumer2ConsumerMgr.Data <= PhaMax;
           UserModule_state          <= Send_8;
         when Send_8 =>
-          Consumer2ConsumerMgr.Data <= TriggerCount(15 downto 0);
+          Consumer2ConsumerMgr.Data <= PhaMaxTime;
           UserModule_state          <= Send_9;
         when Send_9 =>
-          Consumer2ConsumerMgr.Data <= Baseline(15 downto 0);
-          RamAddress                <= (others => '0');
+          Consumer2ConsumerMgr.Data <= PhaMin;
           UserModule_state          <= Send_10;
         when Send_10 =>
-          Consumer2ConsumerMgr.Data <= x"fff1";
+          Consumer2ConsumerMgr.Data <= PhaFirst;
           UserModule_state          <= Send_11;
         when Send_11 =>
-          Consumer2ConsumerMgr.WriteEnable <= '0';
-          RamAddress                       <= RamAddress + 1;
+          Consumer2ConsumerMgr.Data <= PhaLast;
           UserModule_state                 <= Send_12;
-        when Send_12 =>                 --waveform
+        when Send_12 =>
+          Consumer2ConsumerMgr.Data <= MaxDerivative;
+          RamAddress                <= (others => '0');
+          UserModule_state                 <= Send_13;
+        when Send_13 =>
+          Consumer2ConsumerMgr.Data <= Baseline(15 downto 0);
+          RamAddress                       <= RamAddress + 1;
+          UserModule_state                 <= Send_14;
+        when Send_14 =>                 --waveform
           if (RamAddress >= ConsumerMgr2Consumer.EventPacket_NumberOfWaveform(9 downto 0)) then
                                         --if (RamAddress>=10) then
-            Consumer2ConsumerMgr.WriteEnable <= '1'; -- hold WriteEnable = '1' to write the last sample
+            Consumer2ConsumerMgr.WriteEnable <= '0';
             UserModule_state                 <= WriteSeparator_0;
           else
             Consumer2ConsumerMgr.WriteEnable <= '1';
@@ -353,10 +402,6 @@ begin
             RamAddress                       <= RamAddress + 1;
           end if;
         when WriteSeparator_0 =>
-          Consumer2ConsumerMgr.WriteEnable <= '1';
-          Consumer2ConsumerMgr.Data        <= x"fff2";
-          UserModule_state                 <= WriteSeparator_1;
-        when WriteSeparator_1 =>
           Consumer2ConsumerMgr.WriteEnable <= '1';
           Consumer2ConsumerMgr.Data        <= x"ffff";
           UserModule_state                 <= Finalize;
