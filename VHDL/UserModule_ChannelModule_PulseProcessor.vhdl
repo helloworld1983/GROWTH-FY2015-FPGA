@@ -85,7 +85,7 @@ architecture Behavioral of UserModule_ChModule_PulseProcessor is
 
   signal PhaPrevious    : std_logic_vector(15 downto 0) := (others => '0');
   signal PhaMax         : std_logic_vector(15 downto 0) := (others => '0');
-  signal PhaMax_Address : std_logic_vector(9 downto 0)  := (others => '0');
+  signal PhaMaxTime : std_logic_vector(9 downto 0)  := (others => '0');
   signal PhaMin         : std_logic_vector(15 downto 0) := (others => '0');
   signal PhaFirst         : std_logic_vector(15 downto 0) := (others => '0');
   signal PhaLast         : std_logic_vector(15 downto 0) := (others => '0');
@@ -156,7 +156,7 @@ begin
           Consumer2ConsumerMgr.EventReady  <= '0';
           RamWriteEnable                   <= '0';
           PhaMax                           <= (others => '0');
-          PhaMax_Address                   <= (others => '0');
+          PhaMaxTime                   <= (others => '0');
           PhaMin                           <= (others => '1');
           PhaFirst                           <= (others => '0');
           PhaLast                           <= (others => '0');
@@ -278,7 +278,7 @@ begin
           --search pha_max
           if (PhaMax < RamDataOut) then
             PhaMax         <= RamDataOut;
-            PhaMax_Address <= RamAddress;
+            PhaMaxTime <= RamAddress;
           end if;
           --search pha_min
           if (RamDataOut < PhaMin) then
@@ -366,13 +366,13 @@ begin
           Consumer2ConsumerMgr.Data <= x"CAFE"; --reserved
           UserModule_state          <= Send_6;
         when Send_6 =>
-          Consumer2ConsumerMgr.Data <= TriggerCount(31 downto 16);
+          Consumer2ConsumerMgr.Data <= TriggerCount(15 downto 0);
           UserModule_state          <= Send_7;
         when Send_7 =>
           Consumer2ConsumerMgr.Data <= PhaMax;
           UserModule_state          <= Send_8;
         when Send_8 =>
-          Consumer2ConsumerMgr.Data <= PhaMaxTime;
+          Consumer2ConsumerMgr.Data <= "000000" & PhaMaxTime;
           UserModule_state          <= Send_9;
         when Send_9 =>
           Consumer2ConsumerMgr.Data <= PhaMin;
@@ -390,10 +390,13 @@ begin
         when Send_13 =>
           Consumer2ConsumerMgr.Data <= Baseline(15 downto 0);
           RamAddress                       <= RamAddress + 1;
-          UserModule_state                 <= Send_14;
+			 if(conv_integer(ConsumerMgr2Consumer.EventPacket_NumberOfWaveform(9 downto 0))=0)then
+            UserModule_state                 <= WriteSeparator_0;
+			 else
+				UserModule_state                 <= Send_14;
+			  end if;
         when Send_14 =>                 --waveform
-          if (RamAddress >= ConsumerMgr2Consumer.EventPacket_NumberOfWaveform(9 downto 0)) then
-                                        --if (RamAddress>=10) then
+          if (RamAddress > ConsumerMgr2Consumer.EventPacket_NumberOfWaveform(9 downto 0)) then
             Consumer2ConsumerMgr.WriteEnable <= '0';
             UserModule_state                 <= WriteSeparator_0;
           else
