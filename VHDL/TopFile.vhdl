@@ -735,17 +735,6 @@ begin
       blinkOut  => iLED(1)
       );
 
-  --instanceOfBlinker_4 : entity work.Blinker
-  --  generic map(
-  --    LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
-  --    )
-  --  port map(
-  --    clock     => Clock100MHz,
-  --    reset     => reset,
-  --    triggerIn => ft232ReceiveFIFOWriteEnable,
-  --    blinkOut  => iLED(2)
-  --    );
-
   instanceOfBlinker_5 : entity work.Blinker
     generic map(
       LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
@@ -757,15 +746,35 @@ begin
       blinkOut  => iLED(2)
       );
 
+
+  instanceOfBlinker_6 : entity work.Blinker
+    generic map(
+      LedBlinkDuration => 30000000      -- 300ms = 10ns * 30000000
+      )
+    port map(
+      clock     => Clock100MHz,
+      reset     => reset,
+      triggerIn => uartRMAPBusMasterTimeOutErrorIn,
+      blinkOut  => iLED(6)
+      );
+
+  instanceOfBlinker_7 : entity work.Blinker
+    generic map(
+      LedBlinkDuration => 10000000      -- 100ms = 10ns * 10000000
+      )
+    port map(
+      clock     => Clock100MHz,
+      reset     => reset,
+      triggerIn => FT232_nRTS_FPGA_nCTS,
+      blinkOut  => iLED(7)
+      );
+
   --iLED(7 downto 3) <= stateOutSSDTP2TCPToSpaceWire(4 downto 0);
 
   led_op <= iLED;
   
   --iLED(7) <= led1sec;
-  iLED(6) <= '0';
   iLED(5) <= gpsLED;
-  --  iLED(7 downto 0) <= conv_std_logic_vector(uartState, 8);
-
 
   transmitClock <= Clock100MHz;
   receiveClock  <= Clock200MHz;
@@ -1334,7 +1343,7 @@ begin
   uartRMAPBusMasterDataIn               <= uartRMAPBusMasterDataIn_iBus      when RMAPAccessMode = RMAPAccessMode_iBus                                                                       else uartRMAPBusMasterDataIn_EventFIFO;
   uartRMAPBusMasterReadEnable_iBus      <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_iBus                                                                       else '0';
   uartRMAPBusMasterReadEnable_EventFIFO <= uartRMAPBusMasterReadEnable       when RMAPAccessMode = RMAPAccessMode_EventFIFO                                                                  else '0';
-  uartRMAPBusMasterAcknowledge          <= uartRMAPBusMasterAcknowledge_iBus when RMAPAccessMode = RMAPAccessMode_iBus                                                                       else uartRMAPBusMasterAcknowledge_EventFIFO;
+  uartRMAPBusMasterAcknowledge          <= uartRMAPBusMasterAcknowledge_iBus when RMAPAccessMode = RMAPAccessMode_iBus else uartRMAPBusMasterAcknowledge_EventFIFO;
 
   EventFIFO : entity work.EventFIFO
     port map(
@@ -1382,7 +1391,7 @@ begin
               )then                     -- GPS register first word
               case conv_integer(uartRMAPBusMasterAddressOut(15 downto 0)-AddressOfGPSTimeRegister(15 downto 0)) is
                 when 0 =>               -- latch register
-                  uartRMAPBusMasterDataIn_EventFIFO <= x"3050"; -- 00 in ASCII
+                  uartRMAPBusMasterDataIn_EventFIFO <= x"4750"; -- 'GP' in ASCII
                   GPSTimeTableRegister              <= gpsYYMMDDHHMMSS_latched & fpgaRealtime_latched;
                 when 18 =>               -- 
                   uartRMAPBusMasterDataIn_EventFIFO <= GPSTimeTableRegister(15 downto 0);

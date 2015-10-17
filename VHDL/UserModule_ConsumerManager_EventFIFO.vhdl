@@ -121,7 +121,7 @@ architecture Behavioral of UserModule_ConsumerManager_EventFIFO is
   signal ibusBeWrittenDone    : std_logic;
 
   type iBus_beWritten_StateMachine_State is
-    (Initialize, Idle, DataReceive_wait, DataReceive, WaitAddressUpdateDone, WaitResetDone);
+    (Initialize, Idle, DataReceive, WaitDone, WaitResetDone);
   signal iBus_beWritten_state : iBus_beWritten_StateMachine_State := Initialize;
 
   type iBus_beRead_StateMachine_State is
@@ -270,24 +270,25 @@ begin
             iBus_beWritten_state <= DataReceive;
           end if;
         when DataReceive =>
+          ibusBeWrittenDone        <= '1';
                                         --interpret the address of the received data
           case ibusBeWrittenAddress is
             when AddressOf_EventOutputDisableRegister =>
               EventOutputDisableRegister(0) <= iBusBeWrittenData(0);
                                         --move to next state
-              iBus_beWritten_state          <= Idle;
+              iBus_beWritten_state <= WaitDone;
             when AddressOf_GateSize_FastGate_Register =>
               GateSize_FastGate_Register <= iBusBeWrittenData;
                                         --move to next state
-              iBus_beWritten_state       <= Idle;
+              iBus_beWritten_state <= WaitDone;
             when AddressOf_GateSize_SlowGate_Register =>
               GateSize_SlowGate_Register <= iBusBeWrittenData;
                                         --move to next state
-              iBus_beWritten_state       <= Idle;
+              iBus_beWritten_state <= WaitDone;
             when AddressOf_NumberOf_BaselineSample_Register =>
               NumberOf_BaselineSample_Register <= iBusBeWrittenData;
                                         --move to next state
-              iBus_beWritten_state             <= Idle;
+              iBus_beWritten_state <= WaitDone;
             when AddressOf_ResetRegister =>
               ResetRegister(0)     <= '1';
                                         --move to next state
@@ -295,12 +296,18 @@ begin
             when AddressOf_EventPacket_NumberOfWaveform_Register =>
               EventPacket_NumberOfWaveform_Register <= iBusBeWrittenData;
                                         --move to next state
-              iBus_beWritten_state                  <= Idle;
+              iBus_beWritten_state <= WaitDone;
             when others =>
                                         --no corresponding address or register
                                         --move to next state
-              iBus_beWritten_state <= Idle;
+              iBus_beWritten_state <= WaitDone;
           end case;
+        when WaitDone =>                                                                                                            --wait until the "beRead" process completes
+          if (ibusBeWritten = '0') then
+            ibusBeWrittenDone        <= '0';
+                                        --move to next state
+            iBus_beWritten_state <= Idle;
+          end if;
         when WaitResetDone =>
           if (ResetDone = '1') then
             ResetRegister(0)     <= '0';
