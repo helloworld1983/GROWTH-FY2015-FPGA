@@ -34,7 +34,7 @@ package UserModule_Library is
   constant Count100msec  : integer := 12500000;  -- at 125MHz
   constant ADCResolution : integer := 10;      --10bit ADC
 
-  constant MaximumOfDelay                    : integer := 8;  --32clk delay
+  constant MaximumOfDelay                    : integer := 32;  --32clk delay
   constant DepthOfWaveformBufferFIFO         : integer := 8191;  --8191depth
   constant FifoDataWidth                     : integer := 16;  --fifo=16bit word
   constant MaximumOfProducerAndConsumerNodes : integer := 16;
