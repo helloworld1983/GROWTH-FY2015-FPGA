@@ -655,7 +655,6 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal GPS_1PPS                     : std_logic := '0';
   signal gpsData                      : std_logic_vector(7 downto 0);
   signal gpsDataEnable                : std_logic;
-  signal gps1PPS                      : std_logic;
   signal gpsDDMMYY                    : std_logic_vector(47 downto 0);
   signal gpsHHMMSS_SSS                : std_logic_vector(71 downto 0);
   signal gpsDateTimeUpdatedSingleShot : std_logic;
@@ -696,8 +695,6 @@ architecture Behavioral of Tokuden_GROWTH_FY2015_FPGA is
   signal receiveFIFOWriteEnableCount : std_logic_vector(7 downto 0) := (others => '0');
   signal sendFIFOReadEnableCount     : std_logic_vector(7 downto 0) := (others => '0');
   signal sendFIFOWriteEnableCount    : std_logic_vector(7 downto 0) := (others => '0');
-
-
 
 begin
 
